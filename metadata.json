@@ -1,0 +1,13 @@
+{
+  "name": "Deborah Semijoias Personalizadas",
+  "description": "Loja online de semijoias personalizadas de luxo. Peças exclusivas com acabamento de alta qualidade.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "E-commerce",
+    "Admin Panel",
+    "Firebase Integration",
+    "WhatsApp Checkout"
+  ]
+}

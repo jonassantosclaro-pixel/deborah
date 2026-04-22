@@ -1,0 +1,88 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Produto",
+      "description": "Uma semijoia no catálogo",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Nome do produto" },
+        "description": { "type": "string", "description": "Descrição detalhada" },
+        "price": { "type": "number", "description": "Preço em centavos" },
+        "imageUrl": { "type": "string", "description": "Link da imagem" },
+        "categoryId": { "type": "string", "description": "ID da categoria" },
+        "subCategoryId": { "type": "string", "description": "ID da subcategoria" },
+        "complements": { 
+          "type": "array", 
+          "items": {
+             "type": "object",
+             "properties": {
+               "id": { "type": "string" },
+               "name": { "type": "string" },
+               "imageUrl": { "type": "string" },
+               "price": { "type": "number" }
+             }
+          }
+        },
+        "featured": { "type": "boolean", "description": "Se aparece em destaque" },
+        "active": { "type": "boolean", "description": "Se está disponível" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "price", "categoryId"]
+    },
+    "Category": {
+      "title": "Categoria",
+      "description": "Categoria principal (ex: Colares, Brincos)",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "SubCategory": {
+      "title": "Subcategoria",
+      "description": "Subcategoria (ex: Corrente Masculina, Argolas)",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "categoryId": { "type": "string" }
+      },
+      "required": ["name", "categoryId"]
+    },
+    "Setting": {
+      "title": "Configuração",
+      "description": "Dados da loja",
+      "type": "object",
+      "properties": {
+        "whatsapp": { "type": "string" },
+        "instagram": { "type": "string" },
+        "facebook": { "type": "string" },
+        "cnpj": { "type": "string" },
+        "ownerName": { "type": "string" },
+        "pixKey": { "type": "string" },
+        "logoUrl": { "type": "string" }
+      }
+    },
+    "Order": {
+      "title": "Pedido",
+      "description": "Um pedido realizado",
+      "type": "object",
+      "properties": {
+        "customerName": { "type": "string" },
+        "customerPhone": { "type": "string" },
+        "address": { "type": "object" },
+        "items": { "type": "array" },
+        "total": { "type": "number" },
+        "shippingCost": { "type": "number" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "firestore": {
+    "products": { "schema": "Product", "description": "Coleção de produtos" },
+    "categories": { "schema": "Category", "description": "Coleção de categorias" },
+    "sub_categories": { "schema": "SubCategory", "description": "Coleção de subcategorias" },
+    "settings": { "schema": "Setting", "description": "Documentos de configuração" },
+    "orders": { "schema": "Order", "description": "Coleção de pedidos" }
+  }
+}
