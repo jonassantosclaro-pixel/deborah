@@ -27,6 +27,7 @@ export interface Product {
   complements?: Complement[];
   featured: boolean;
   active: boolean;
+  hasLength?: boolean;
   createdAt: any;
 }
 
@@ -45,6 +46,8 @@ export interface Settings {
 export interface CartItem extends Product {
   quantity: number;
   selectedComplements?: Complement[];
+  personalization?: string;
+  selectedLength?: string;
 }
 
 export interface Order {

@@ -20,6 +20,8 @@ export function Store({ onAddToCart }: StoreProps) {
   const [selectedSubCategory, setSelectedSubCategory] = useState<string>('all');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedComplements, setSelectedComplements] = useState<Complement[]>([]);
+  const [personalization, setPersonalization] = useState<string>('');
+  const [selectedLength, setSelectedLength] = useState<string>('45cm');
 
   useEffect(() => {
     const qProducts = query(collection(db, 'products'), where('active', '==', true));
@@ -67,15 +69,20 @@ export function Store({ onAddToCart }: StoreProps) {
 
   const handleAddToCart = () => {
     if (!selectedProduct) return;
+    const isNecklace = selectedProduct.hasLength || /colar|corrente|cordao|cordão/i.test(selectedProduct.name);
     const finalPrice = selectedProduct.price + selectedComplements.reduce((acc, c) => acc + c.price, 0);
     onAddToCart({
       ...selectedProduct,
-      price: finalPrice, // Total price including complements for this specific item
+      price: finalPrice,
       selectedComplements: selectedComplements,
+      personalization: personalization,
+      selectedLength: isNecklace ? selectedLength : undefined,
       quantity: 1
     });
     setSelectedProduct(null);
     setSelectedComplements([]);
+    setPersonalization('');
+    setSelectedLength('45cm');
   };
 
   return (
@@ -186,19 +193,15 @@ export function Store({ onAddToCart }: StoreProps) {
                   </div>
                   <h3 className="text-sm font-bold mb-1 h-10 overflow-hidden line-clamp-2">{product.name}</h3>
                   <p className="text-black font-bold text-lg mb-4">
-                    {(product.price / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    {(product.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </p>
                   <button 
                     onClick={() => {
-                      if (product.complements && product.complements.length > 0) {
-                        setSelectedProduct(product);
-                      } else {
-                        onAddToCart({ ...product, quantity: 1 });
-                      }
+                      setSelectedProduct(product);
                     }}
                     className="w-full bg-brand-pink text-white py-2.5 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-brand-dark transition-all shadow-md active:scale-95"
                   >
-                    Adicionar ao Carrinho
+                    Personalizar e Comprar
                   </button>
                 </motion.div>
               ))}
@@ -215,7 +218,7 @@ export function Store({ onAddToCart }: StoreProps) {
                initial={{ opacity: 0 }}
                animate={{ opacity: 1 }}
                exit={{ opacity: 0 }}
-               onClick={() => setSelectedProduct(null)}
+               onClick={() => { setSelectedProduct(null); setPersonalization(''); }}
                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
              />
              <motion.div 
@@ -231,10 +234,42 @@ export function Store({ onAddToCart }: StoreProps) {
                    <div className="flex-grow space-y-6">
                       <div>
                         <h2 className="text-2xl font-serif font-bold text-brand-dark">{selectedProduct.name}</h2>
-                        <p className="text-black font-bold text-xl mt-1">{(selectedProduct.price / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                        <p className="text-black font-bold text-xl mt-1">{(selectedProduct.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                       </div>
                       
                       <p className="text-xs text-black leading-relaxed italic">{selectedProduct.description}</p>
+
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-black uppercase tracking-widest">Nome para Personalização (Opcional)</label>
+                        <input 
+                          type="text" 
+                          placeholder="Ex: Maria" 
+                          className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-xs outline-none focus:ring-2 focus:ring-brand-pink/10"
+                          value={personalization}
+                          onChange={e => setPersonalization(e.target.value)}
+                        />
+                      </div>
+
+                      {(selectedProduct.hasLength || /colar|corrente|cordao|cordão/i.test(selectedProduct.name)) && (
+                        <div className="space-y-3">
+                          <label className="text-[10px] font-bold text-black uppercase tracking-widest">Tamanho da Corrente</label>
+                          <div className="grid grid-cols-4 gap-2">
+                             {['40cm', '45cm', '50cm', '60cm'].map(len => (
+                               <button
+                                 key={len}
+                                 type="button"
+                                 onClick={() => setSelectedLength(len)}
+                                 className={cn(
+                                   "py-2 rounded-lg text-[10px] font-bold border transition-all",
+                                   selectedLength === len ? "bg-brand-gold border-brand-gold text-white" : "bg-white border-brand-gold/20 text-brand-dark hover:border-brand-gold"
+                                 )}
+                               >
+                                 {len}
+                               </button>
+                             ))}
+                          </div>
+                        </div>
+                      )}
 
                       {selectedProduct.complements && selectedProduct.complements.length > 0 && (
                         <div className="space-y-3">
@@ -259,7 +294,7 @@ export function Store({ onAddToCart }: StoreProps) {
                                 </div>
                                 <div className="flex-grow">
                                    <p className="text-[11px] font-bold text-brand-dark">{comp.name}</p>
-                                   <p className="text-[10px] text-brand-pink font-bold">+ {(comp.price/100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                                   <p className="text-[10px] text-brand-pink font-bold">+ {(comp.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                                 </div>
                                 <div className={cn(
                                   "w-5 h-5 rounded-full border flex items-center justify-center transition-colors",
@@ -278,7 +313,7 @@ export function Store({ onAddToCart }: StoreProps) {
                       <div className="flex justify-between items-center mb-4">
                         <span className="text-[10px] font-bold text-black uppercase tracking-widest">Valor Final</span>
                         <span className="text-lg font-bold text-brand-dark">
-                          {((selectedProduct.price + selectedComplements.reduce((acc, c) => acc + c.price, 0)) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          {((selectedProduct.price + selectedComplements.reduce((acc, c) => acc + c.price, 0))).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </span>
                       </div>
                       <button 
@@ -290,7 +325,7 @@ export function Store({ onAddToCart }: StoreProps) {
                    </div>
                 </div>
                 <button 
-                  onClick={() => setSelectedProduct(null)}
+                  onClick={() => { setSelectedProduct(null); setPersonalization(''); }}
                   className="absolute top-4 right-4 p-2 bg-white/80 backdrop-blur-sm rounded-full text-brand-dark shadow-md md:text-white md:bg-brand-dark/20 md:hover:bg-brand-dark/40 transition-colors"
                 >
                   <X size={20} />

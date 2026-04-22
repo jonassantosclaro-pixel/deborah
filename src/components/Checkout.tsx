@@ -58,7 +58,7 @@ export function Checkout({ cart, clearCart }: CheckoutProps) {
             city: data.localidade,
             state: data.uf
           }));
-          setShippingCost(data.uf === 'BA' ? 1500 : 2500);
+          setShippingCost(data.uf === 'BA' ? 15.00 : 25.00);
         }
       } catch (e) {
         console.error('CEP error', e);
@@ -95,13 +95,19 @@ export function Checkout({ cart, clearCart }: CheckoutProps) {
       const docRef = await addDoc(collection(db, 'orders'), order);
       
       const itemsList = cart.map(i => {
-        let text = `- ${i.quantity}x ${i.name} (R$ ${ (i.price/100).toFixed(2) })`;
+        let text = `- ${i.quantity}x ${i.name} (R$ ${ (i.price).toFixed(2) })`;
+        if (i.personalization) {
+          text += `%0A  *Personalização:* ${i.personalization}`;
+        }
+        if (i.selectedLength) {
+          text += `%0A  *Tamanho:* ${i.selectedLength}`;
+        }
         if (i.selectedComplements && i.selectedComplements.length > 0) {
           text += `%0A  + Complementos: ${i.selectedComplements.map(c => c.name).join(', ')}`;
         }
         return text;
       }).join('%0A');
-      const message = `*Olá, Deborah! Novo Pedido realizado no site!*%0A%0A*Pedido ID:* ${docRef.id}%0A*Cliente:* ${formData.name}%0A*Telefone:* ${formData.phone}%0A%0A*Itens:*%0A${itemsList}%0A%0A*Total:* R$ ${(total/100).toFixed(2)} (Frete R$ ${(shippingCost/100).toFixed(2)})%0A%0A*Endereço:*%0A${formData.street}, ${formData.number} - ${formData.neighborhood}%0A${formData.city}/${formData.state} - CEP: ${formData.cep}`;
+      const message = `*Olá, Deborah! Novo Pedido realizado no site!*%0A%0A*Pedido ID:* ${docRef.id}%0A*Cliente:* ${formData.name}%0A*Telefone:* ${formData.phone}%0A%0A*Itens:*%0A${itemsList}%0A%0A*Total:* R$ ${(total).toFixed(2)} (Frete R$ ${(shippingCost).toFixed(2)})%0A%0A*Endereço:*%0A${formData.street}, ${formData.number} - ${formData.neighborhood}%0A${formData.city}/${formData.state} - CEP: ${formData.cep}`;
       
       const whatsappNumber = settings?.whatsapp || '5577999110250';
       window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
@@ -288,12 +294,17 @@ export function Checkout({ cart, clearCart }: CheckoutProps) {
                 
                 <div className="space-y-4 max-h-60 overflow-y-auto pr-4 mb-6 thin-scrollbar">
                   {cart.map(item => (
-                    <div key={item.id} className="flex justify-between items-center text-sm border-b border-black/5 pb-2">
-                      <span className="flex items-center gap-2">
-                        <span className="w-5 h-5 bg-white flex items-center justify-center rounded text-[10px] font-bold text-brand-pink">{item.quantity}x</span>
-                        <span className="text-brand-dark font-medium">{item.name}</span>
-                      </span>
-                      <span className="font-bold text-brand-pink">{(item.price * item.quantity / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                    <div key={item.id} className="flex flex-col border-b border-black/5 pb-2">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="flex items-center gap-2">
+                          <span className="w-5 h-5 bg-white flex items-center justify-center rounded text-[10px] font-bold text-brand-pink">{item.quantity}x</span>
+                          <span className="text-brand-dark font-medium">{item.name}</span>
+                        </span>
+                        <span className="font-bold text-brand-pink">{(item.price * item.quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                      </div>
+                      {item.selectedLength && (
+                        <span className="text-[10px] text-brand-gold font-bold uppercase ml-7">Tamanho: {item.selectedLength}</span>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -301,18 +312,18 @@ export function Checkout({ cart, clearCart }: CheckoutProps) {
                 <div className="space-y-3 pt-4 border-t border-brand-gold/10">
                   <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-gray-500">
                     <span>Subtotal</span>
-                    <span>{(subtotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                    <span>{(subtotal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                   </div>
                   <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-gray-500">
                     <span>Frete</span>
                     <span>
-                      {calculatingShipping ? 'Calculando...' : (shippingCost / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      {calculatingShipping ? 'Calculando...' : (shippingCost).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </span>
                   </div>
                   <div className="flex justify-between items-center pt-4 mt-4 border-t border-brand-gold/30">
                     <span className="text-xl font-serif font-bold text-brand-dark">Total</span>
                     <span className="text-2xl font-bold text-black">
-                      {(total / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      {(total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </span>
                   </div>
                 </div>
@@ -343,7 +354,7 @@ export function Checkout({ cart, clearCart }: CheckoutProps) {
             <div className="bg-[#FDF2F2] p-8 rounded-3xl space-y-6">
               <p className="text-xs font-bold uppercase tracking-widest text-black">Pague Agora via PIX</p>
               <div className="bg-white p-4 rounded-2xl inline-block shadow-inner mx-auto mb-4 border-4 border-[#B17A7A]/10">
-                <QRCodeSVG value={`00020126360014BR.GOV.BCB.PIX0114${(settings?.pixKey || '66366255000180').replace(/\D/g, '')}5204000053039865405${(total/100).toFixed(2)}5802BR5915Deborah Evellyn6008Guanambi62070503***6304`} size={200} />
+                <QRCodeSVG value={`00020126360014BR.GOV.BCB.PIX0114${(settings?.pixKey || '66366255000180').replace(/\D/g, '')}5204000053039865405${(total).toFixed(2)}5802BR5915Deborah Evellyn6008Guanambi62070503***6304`} size={200} />
               </div>
               <div className="space-y-4">
                 <div>
@@ -353,7 +364,7 @@ export function Checkout({ cart, clearCart }: CheckoutProps) {
                 <div className="bg-white p-4 rounded-xl text-left border border-[#B17A7A]/10">
                    <div className="flex justify-between font-bold text-sm mb-1">
                      <span>Valor Total</span>
-                     <span className="text-black">{(total / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                     <span className="text-black">{(total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                    </div>
                    <p className="text-[10px] text-[#3C1A1A]/40">Favor enviar o comprovante no WhatsApp.</p>
                 </div>

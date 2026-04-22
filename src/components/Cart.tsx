@@ -78,6 +78,20 @@ export function Cart({ items, onClose, onRemove, onUpdateQuantity }: CartProps) 
                     </div>
                   )}
 
+                  {item.personalization && (
+                    <div className="mb-2 bg-brand-pink/5 p-2 rounded-lg border border-brand-pink/10">
+                       <p className="text-[9px] uppercase tracking-widest font-bold text-brand-pink">Personalização:</p>
+                       <p className="text-[11px] font-bold text-brand-dark">{item.personalization}</p>
+                    </div>
+                  )}
+
+                  {item.selectedLength && (
+                    <div className="mb-2 bg-brand-gold/5 p-2 rounded-lg border border-brand-gold/10">
+                       <p className="text-[9px] uppercase tracking-widest font-bold text-brand-gold">Tamanho Escolhido:</p>
+                       <p className="text-[11px] font-bold text-brand-dark">{item.selectedLength}</p>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between">
                     <div className="flex items-center border border-brand-gold/20 rounded-lg bg-white/60 overflow-hidden">
                       <button onClick={() => onUpdateQuantity(item.id, -1)} className="p-1 hover:bg-brand-pink/10 transition-colors">
@@ -89,7 +103,7 @@ export function Cart({ items, onClose, onRemove, onUpdateQuantity }: CartProps) 
                       </button>
                     </div>
                     <span className="font-bold text-brand-pink">
-                      {(item.price * item.quantity / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      {(item.price * item.quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </span>
                   </div>
                 </div>
@@ -103,7 +117,7 @@ export function Cart({ items, onClose, onRemove, onUpdateQuantity }: CartProps) 
             <div className="flex justify-between items-center bg-white/40 p-4 rounded-xl">
               <span className="text-xs font-bold uppercase tracking-widest text-black">Subtotal</span>
               <span className="font-bold text-xl text-brand-pink">
-                {(subtotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                {(subtotal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
               </span>
             </div>
             <Link 

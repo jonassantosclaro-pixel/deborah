@@ -35,6 +35,7 @@ export function AdminPanel() {
     subCategoryId: string;
     featured: boolean;
     active: boolean;
+    hasLength: boolean;
     complements: Complement[];
   }>({
     name: '',
@@ -45,6 +46,7 @@ export function AdminPanel() {
     subCategoryId: '',
     featured: false,
     active: true,
+    hasLength: false,
     complements: []
   });
 
@@ -72,16 +74,42 @@ export function AdminPanel() {
   useEffect(() => {
     if (!user) return;
 
-    const unsubProducts = onSnapshot(collection(db, 'products'), (s) => setProducts(s.docs.map(d => ({ id: d.id, ...d.data() } as Product))));
-    const unsubCategories = onSnapshot(collection(db, 'categories'), (s) => setCategories(s.docs.map(d => ({ id: d.id, ...d.data() } as Category))));
-    const unsubSub = onSnapshot(collection(db, 'sub_categories'), (s) => setSubCategories(s.docs.map(d => ({ id: d.id, ...d.data() } as SubCategory))));
-    const unsubOrders = onSnapshot(collection(db, 'orders'), (s) => setOrders(s.docs.map(d => ({ id: d.id, ...d.data() } as Order))));
-    const unsubSettings = onSnapshot(collection(db, 'settings'), (s) => {
-      if (!s.empty) {
-        const data = { id: s.docs[0].id, ...s.docs[0].data() } as Settings;
-        setSettings(data);
-        setSettingsForm(data);
+    const onError = (err: any) => {
+      console.error("Firestore snapshot error:", err);
+      if (err.code === 'permission-denied') {
+        setError('Você não tem permissão para acessar alguns dados. Verifique se seu e-mail está autorizado no console do Firebase.');
       }
+    };
+
+    const unsubProducts = onSnapshot(collection(db, 'products'), {
+      next: (s) => setProducts(s.docs.map(d => ({ id: d.id, ...d.data() } as Product))),
+      error: onError
+    });
+    
+    const unsubCategories = onSnapshot(collection(db, 'categories'), {
+      next: (s) => setCategories(s.docs.map(d => ({ id: d.id, ...d.data() } as Category))),
+      error: onError
+    });
+    
+    const unsubSub = onSnapshot(collection(db, 'sub_categories'), {
+      next: (s) => setSubCategories(s.docs.map(d => ({ id: d.id, ...d.data() } as SubCategory))),
+      error: onError
+    });
+    
+    const unsubOrders = onSnapshot(collection(db, 'orders'), {
+      next: (s) => setOrders(s.docs.map(d => ({ id: d.id, ...d.data() } as Order))),
+      error: onError
+    });
+    
+    const unsubSettings = onSnapshot(collection(db, 'settings'), {
+      next: (s) => {
+        if (!s.empty) {
+          const data = { id: s.docs[0].id, ...s.docs[0].data() } as Settings;
+          setSettings(data);
+          setSettingsForm(data);
+        }
+      },
+      error: onError
     });
     
     return () => {
@@ -106,33 +134,56 @@ export function AdminPanel() {
 
   const saveProduct = async (e: FormEvent) => {
     e.preventDefault();
+    setError('');
     const data = { ...productForm, createdAt: serverTimestamp() };
     
-    if (editingProduct) {
-      await updateDoc(doc(db, 'products', editingProduct.id), data);
-    } else {
-      await addDoc(collection(db, 'products'), data);
+    try {
+      if (editingProduct) {
+        await updateDoc(doc(db, 'products', editingProduct.id), data);
+      } else {
+        await addDoc(collection(db, 'products'), data);
+      }
+      setShowProductForm(false);
+      setEditingProduct(null);
+      setProductForm({ name: '', description: '', price: 0, imageUrl: '', categoryId: '', subCategoryId: '', featured: false, active: true, hasLength: false, complements: [] });
+    } catch (err: any) {
+      console.error("Save failed:", err);
+      setError('Erro ao salvar produto. Verifique suas permissões de administrador.');
     }
-    
-    setShowProductForm(false);
-    setEditingProduct(null);
-    setProductForm({ name: '', description: '', price: 0, imageUrl: '', categoryId: '', subCategoryId: '', featured: false, active: true, complements: [] });
   };
 
   const deleteProduct = async (id: string) => {
-    if (confirm('Tem certeza?')) await deleteDoc(doc(db, 'products', id));
+    if (!confirm('Tem certeza que deseja excluir este item?')) return;
+    setError('');
+    try {
+      await deleteDoc(doc(db, 'products', id));
+    } catch (err: any) {
+      console.error("Delete failed:", err);
+      alert('Erro ao excluir: Você não tem permissão de administrador.');
+      setError('Erro ao excluir: Verifique se seu usuário é um administrador.');
+    }
   };
 
   const addCategory = async () => {
     if (!categoryName) return;
-    await addDoc(collection(db, 'categories'), { name: categoryName });
-    setCategoryName('');
+    setError('');
+    try {
+      await addDoc(collection(db, 'categories'), { name: categoryName });
+      setCategoryName('');
+    } catch (err: any) {
+      setError('Erro ao adicionar categoria: Verifique suas permissões.');
+    }
   };
 
   const addSubCategory = async () => {
     if (!subCategoryForm.name || !subCategoryForm.categoryId) return;
-    await addDoc(collection(db, 'sub_categories'), subCategoryForm);
-    setSubCategoryForm({ name: '', categoryId: '' });
+    setError('');
+    try {
+      await addDoc(collection(db, 'sub_categories'), subCategoryForm);
+      setSubCategoryForm({ name: '', categoryId: '' });
+    } catch (err: any) {
+      setError('Erro ao adicionar subcategoria: Verifique suas permissões.');
+    }
   };
 
   const seedDefaultCategories = async () => {
@@ -167,12 +218,19 @@ export function AdminPanel() {
   };
 
   const saveSettings = async () => {
-    if (settings?.id) {
-      await updateDoc(doc(db, 'settings', settings.id), { ...settingsForm });
-    } else {
-      await addDoc(collection(db, 'settings'), { ...settingsForm });
+    setError('');
+    try {
+      if (settings?.id) {
+        await updateDoc(doc(db, 'settings', settings.id), { ...settingsForm });
+      } else {
+        await addDoc(collection(db, 'settings'), { ...settingsForm });
+      }
+      alert('Configurações salvas com sucesso!');
+    } catch (err: any) {
+      console.error('Settings save failed', err);
+      setError('Erro ao salvar configurações. Verifique suas permissões.');
+      alert('Erro ao salvar: Verifique se você é um administrador.');
     }
-    alert('Configurações salvas!');
   };
 
   const addComplementToForm = () => {
@@ -254,7 +312,10 @@ export function AdminPanel() {
             <div className="w-8 h-8 border border-black rounded-full flex items-center justify-center">
               <span className="font-serif text-lg font-bold text-black">D</span>
             </div>
-            <span className="font-serif text-xl font-bold tracking-tight text-black">Admin</span>
+            <div className="flex flex-col">
+              <span className="font-serif text-xl font-bold tracking-tight text-black leading-none">Admin</span>
+              <span className="text-[9px] text-black/40 truncate max-w-[150px]">{user?.email}</span>
+            </div>
         </div>
 
         <nav className="flex flex-col gap-2">
@@ -448,13 +509,23 @@ export function AdminPanel() {
                               + {item.selectedComplements.map(c => c.name).join(', ')}
                             </div>
                           )}
+                          {item.personalization && (
+                            <div className="text-[10px] text-brand-pink font-bold pl-2 italic">
+                              Personalização: {item.personalization}
+                            </div>
+                          )}
+                          {item.selectedLength && (
+                            <div className="text-[10px] text-brand-gold font-bold pl-2 italic">
+                              Tamanho: {item.selectedLength}
+                            </div>
+                          )}
                         </div>
-                        <span className="text-black">{(item.price * item.quantity / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                        <span className="text-black">{(item.price * item.quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                       </div>
                     ))}
                   </div>
                   <div className="flex justify-between items-center pt-2 border-t border-gray-50">
-                    <span className="text-xs font-bold text-black">Total: {(o.total/100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                    <span className="text-xs font-bold text-black">Total: {(o.total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                     <button className="text-xs text-black font-bold hover:underline">Ver no WhatsApp</button>
                   </div>
                 </div>
@@ -572,8 +643,8 @@ export function AdminPanel() {
                 <textarea className="w-full border border-brand-gold/10 rounded-xl px-4 py-3 h-24 focus:ring-2 focus:ring-brand-pink/10 outline-none" value={productForm.description} onChange={e => setProductForm({...productForm, description: e.target.value})} />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-black uppercase tracking-widest">Preço (em centavos)</label>
-                <input type="number" required className="w-full border border-brand-gold/10 rounded-xl px-4 py-3 focus:ring-2 focus:ring-brand-pink/10 outline-none" value={productForm.price} onChange={e => setProductForm({...productForm, price: Number(e.target.value)})} />
+                <label className="text-[10px] font-bold text-black uppercase tracking-widest">Preço (R$)</label>
+                <input type="number" step="0.01" required className="w-full border border-brand-gold/10 rounded-xl px-4 py-3 focus:ring-2 focus:ring-brand-pink/10 outline-none" value={productForm.price} onChange={e => setProductForm({...productForm, price: Number(e.target.value)})} />
               </div>
               <div className="space-y-1">
                  <label className="text-[10px] font-bold text-black uppercase tracking-widest">Categoria</label>
@@ -623,6 +694,7 @@ export function AdminPanel() {
                       />
                       <input 
                         type="number"
+                        step="0.01"
                         placeholder="Valor" 
                         className="bg-white border rounded-lg px-3 py-1.5 text-xs"
                         value={comp.price}
@@ -648,6 +720,10 @@ export function AdminPanel() {
               <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-2xl">
                 <input type="checkbox" className="w-5 h-5 rounded border-brand-gold/20 text-brand-pink focus:ring-brand-pink" checked={productForm.featured} onChange={e => setProductForm({...productForm, featured: e.target.checked})} />
                 <label className="text-[10px] font-bold text-black uppercase tracking-widest">Destaque na Home</label>
+              </div>
+              <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-2xl">
+                <input type="checkbox" className="w-5 h-5 rounded border-brand-gold/20 text-brand-pink focus:ring-brand-pink" checked={productForm.hasLength} onChange={e => setProductForm({...productForm, hasLength: e.target.checked})} />
+                <label className="text-[10px] font-bold text-black uppercase tracking-widest">Opção de Tamanho (Correntes)</label>
               </div>
               <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-2xl">
                 <input type="checkbox" className="w-5 h-5 rounded border-brand-gold/20 text-brand-pink focus:ring-brand-pink" checked={productForm.active} onChange={e => setProductForm({...productForm, active: e.target.checked})} />
