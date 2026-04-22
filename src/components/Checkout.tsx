@@ -19,6 +19,7 @@ export function Checkout({ cart, clearCart }: CheckoutProps) {
   const [shippingCost, setShippingCost] = useState(0);
   const [calculatingShipping, setCalculatingShipping] = useState(false);
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [submittedDetails, setSubmittedDetails] = useState<{ total: number, pixKey: string } | null>(null);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -111,6 +112,11 @@ export function Checkout({ cart, clearCart }: CheckoutProps) {
       
       const whatsappNumber = settings?.whatsapp || '5577999110250';
       window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
+      
+      setSubmittedDetails({
+        total: total,
+        pixKey: settings?.pixKey || '66366255000180'
+      });
       
       setStep(2);
       clearCart();
@@ -354,17 +360,24 @@ export function Checkout({ cart, clearCart }: CheckoutProps) {
             <div className="bg-[#FDF2F2] p-8 rounded-3xl space-y-6">
               <p className="text-xs font-bold uppercase tracking-widest text-black">Pague Agora via PIX</p>
               <div className="bg-white p-4 rounded-2xl inline-block shadow-inner mx-auto mb-4 border-4 border-[#B17A7A]/10">
-                <QRCodeSVG value={`00020126360014BR.GOV.BCB.PIX0114${(settings?.pixKey || '66366255000180').replace(/\D/g, '')}5204000053039865405${(total).toFixed(2)}5802BR5915Deborah Evellyn6008Guanambi62070503***6304`} size={200} />
+                {(() => {
+                  const finalTotal = submittedDetails?.total || 0;
+                  const rawPixKey = (submittedDetails?.pixKey || '66366255000180').replace(/\D/g, '');
+                  const amount = finalTotal.toFixed(2);
+                  const amountLen = amount.length.toString().padStart(2, '0');
+                  const pixPayload = `00020126360014BR.GOV.BCB.PIX0114${rawPixKey}52040000530398654${amountLen}${amount}5802BR5915Deborah Evellyn6008Guanambi62070503***6304`;
+                  return <QRCodeSVG value={pixPayload} size={200} />;
+                })()}
               </div>
               <div className="space-y-4">
                 <div>
-                  <p className="text-[10px] text-[#3C1A1A]/40 uppercase tracking-widest mb-1">Chave PIX</p>
-                  <p className="font-mono font-bold text-lg select-all">{settings?.pixKey || '66.366.255/0001-80'}</p>
+                  <p className="text-[10px] text-[#3C1A1A]/40 uppercase tracking-widest mb-1">Chave PIX (CNPJ)</p>
+                  <p className="font-mono font-bold text-lg select-all">{submittedDetails?.pixKey.includes('/') ? submittedDetails.pixKey : '66.366.255/0001-80'}</p>
                 </div>
                 <div className="bg-white p-4 rounded-xl text-left border border-[#B17A7A]/10">
                    <div className="flex justify-between font-bold text-sm mb-1">
                      <span>Valor Total</span>
-                     <span className="text-black">{(total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                     <span className="text-black">{(submittedDetails?.total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                    </div>
                    <p className="text-[10px] text-[#3C1A1A]/40">Favor enviar o comprovante no WhatsApp.</p>
                 </div>
