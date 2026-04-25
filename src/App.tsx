@@ -22,7 +22,7 @@ export default function App() {
 
   // Intro timer
   useEffect(() => {
-    const timer = setTimeout(() => setShowIntro(false), 5000);
+    const timer = setTimeout(() => setShowIntro(false), 10000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -78,7 +78,7 @@ export default function App() {
   return (
     <Router>
       <AnimatePresence>
-        {showIntro && <IntroScreen key="intro" />}
+        {showIntro && <IntroScreen onComplete={() => setShowIntro(false)} />}
       </AnimatePresence>
 
       <div className="min-h-screen bg-[#FDF2F2] flex flex-col font-sans selection:bg-[#B17A7A]/30 selection:text-[#3C1A1A]">

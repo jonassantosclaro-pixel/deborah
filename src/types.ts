@@ -36,10 +36,12 @@ export interface Settings {
   whatsapp: string;
   instagram: string;
   facebook: string;
+  email: string;
   cnpj: string;
   ownerName: string;
   pixKey: string;
   logoUrl?: string;
+  heroImageUrl?: string;
   freeShippingThreshold?: number;
 }
 

@@ -1,49 +1,49 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Montserrat:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Helvetica Neue", "Inter", Arial, sans-serif;
-  --font-serif: "Georgia", "Cormorant Garamond", serif;
+  --font-sans: "Montserrat", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Cormorant Garamond", ui-serif, Georgia, serif;
   
-  --color-brand-pink: #b76e79;
-  --color-brand-gold: #d4af37;
-  --color-brand-dark: #000000;
-  --color-brand-light: #fcfaf7;
+  --color-brand-accent: #d4af37;     /* Champagne Gold */
+  --color-brand-dark: #3C1A1A;       /* Deep Pink/Brown from Logo */
+  --color-brand-pink: #B17A7A;       /* Soft Pink from Logo */
+  --color-brand-light: #fafafa;      /* Architectural White */
+  --color-brand-muted: #B17A7A;      /* Redefined muted to light pink for luxury */
 }
 
 @layer base {
   body {
-    @apply text-black bg-brand-light;
-    background: radial-gradient(circle at top right, #fff0f5, #fcfaf7) fixed;
+    @apply text-brand-dark bg-brand-light font-sans antialiased;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif text-brand-dark;
   }
 }
 
-.frosted-glass {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.8);
+.luxury-card {
+  @apply bg-white border border-brand-dark/5 hover:border-brand-accent/30 transition-all duration-500;
 }
 
-.frosted-glass-heavy {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(15px);
-  border: 1px solid rgba(212, 175, 55, 0.3);
+.button-primary {
+  @apply bg-brand-dark text-white px-8 py-3 text-xs uppercase tracking-[0.2em] font-medium hover:bg-brand-accent transition-all duration-300 active:scale-95;
 }
 
-.frosted-glass-gold {
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(5px);
-  border: 1px solid rgba(212, 175, 55, 0.2);
+.button-outline {
+  @apply border border-brand-dark text-brand-dark px-8 py-3 text-xs uppercase tracking-[0.2em] font-medium hover:bg-brand-dark hover:text-white transition-all duration-300;
 }
 
-.rose-gold-gradient {
-  background: linear-gradient(135deg, #b76e79 0%, #e6b4b4 50%, #b76e79 100%);
+.thin-scrollbar::-webkit-scrollbar {
+  width: 4px;
 }
 
-.brand-pink-text {
-  @apply text-brand-pink;
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.brand-gold-text {
-  @apply text-brand-gold;
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-brand-dark);
+  opacity: 0.1;
+  border-radius: 10px;
 }

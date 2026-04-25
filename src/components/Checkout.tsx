@@ -1,11 +1,11 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { CartItem, Order, Settings } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronLeft, Package, Truck, CreditCard, QrCode, CheckCircle2, ShoppingBag } from 'lucide-react';
+import { ChevronLeft, Truck, CreditCard, QrCode, CheckCircle2, ShoppingBag, ShieldCheck, Sparkle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { db } from '../lib/firebase';
-import { collection, addDoc, serverTimestamp, getDocs, query, limit } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, onSnapshot, query, limit } from 'firebase/firestore';
 
 interface CheckoutProps {
   cart: CartItem[];
@@ -35,11 +35,10 @@ export function Checkout({ cart, clearCart }: CheckoutProps) {
   });
 
   useEffect(() => {
-    const fetchSettings = async () => {
-      const s = await getDocs(query(collection(db, 'settings'), limit(1)));
+    const unsub = onSnapshot(query(collection(db, 'settings'), limit(1)), (s) => {
       if (!s.empty) setSettings({ id: s.docs[0].id, ...s.docs[0].data() } as Settings);
-    };
-    fetchSettings();
+    });
+    return () => unsub();
   }, []);
 
   const subtotal = cart.reduce((acc, i) => acc + (i.price * i.quantity), 0);
@@ -129,79 +128,95 @@ export function Checkout({ cart, clearCart }: CheckoutProps) {
 
   if (cart.length === 0 && step === 1) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-4">
-        <div className="w-20 h-20 bg-[#FDF2F2] text-[#B17A7A] rounded-full flex items-center justify-center mb-4">
-          <ShoppingBag size={40} />
+      <div className="flex flex-col items-center justify-center min-h-[70vh] text-center space-y-8 px-6">
+        <div className="relative">
+          <ShoppingBag size={80} strokeWidth={0.5} className="text-brand-accent/20" />
+          <motion.div 
+            animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="absolute -top-2 -right-2 text-brand-accent"
+          >
+            <Sparkle size={20} />
+          </motion.div>
         </div>
-        <h2 className="text-2xl font-serif font-bold">Seu carrinho está vazio</h2>
-        <p className="text-[#3C1A1A]/60">Adicione alguns produtos para continuar.</p>
-        <Link to="/" className="bg-[#3C1A1A] text-white px-8 py-3 rounded-full font-bold">Voltar para a loja</Link>
+        <div className="space-y-4">
+          <h2 className="text-3xl font-serif text-brand-dark">Sua sacola está vazia</h2>
+          <p className="text-brand-muted text-sm tracking-widest max-w-xs mx-auto">Comece a preenchê-la com nossas peças exclusivas banhadas em sentimentos.</p>
+        </div>
+        <Link to="/" className="button-primary px-12">Explorar Coleção</Link>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 md:px-8 py-12">
+    <div className="max-w-[1400px] mx-auto px-4 md:px-12 py-16">
       <AnimatePresence mode="wait">
         {step === 1 ? (
           <motion.div 
             key="checkout"
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="grid grid-cols-1 lg:grid-cols-2 gap-12"
+            exit={{ opacity: 0, y: -10 }}
+            className="grid grid-cols-1 lg:grid-cols-12 gap-16"
           >
             {/* Form Side */}
-            <div className="space-y-8">
-              <div className="flex items-center gap-4">
-                <Link to="/" className="p-2 hover:bg-white rounded-full transition-colors text-brand-pink">
-                  <ChevronLeft size={24} />
+            <div className="lg:col-span-7 space-y-12">
+              <div className="flex flex-col gap-6">
+                <Link to="/" className="flex items-center gap-2 text-brand-muted hover:text-brand-dark transition-colors group w-fit">
+                  <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+                  <span className="text-[10px] uppercase tracking-[0.3em] font-medium">Voltar para a Coleção</span>
                 </Link>
-                <h1 className="text-3xl font-serif font-bold text-brand-dark">Finalizar Compra</h1>
+                <div className="space-y-2">
+                   <p className="text-[10px] uppercase tracking-[0.5em] font-medium text-brand-accent">Início do Pedido</p>
+                   <h1 className="text-4xl md:text-5xl font-serif text-brand-dark leading-tight">Finalização <br /> <span className="italic">Exclusiva</span></h1>
+                </div>
               </div>
 
-              <form onSubmit={handleSubmitOrder} className="space-y-6">
-                <div className="frosted-glass p-8 rounded-3xl shadow-sm space-y-6">
-                  <div className="flex items-center gap-2 text-brand-pink font-bold mb-4">
-                    <CheckCircle2 size={20} />
-                    <span className="uppercase text-[10px] tracking-widest">Seus Dados</span>
+              <form onSubmit={handleSubmitOrder} className="space-y-16">
+                {/* 1. Personal Details */}
+                <section className="space-y-8">
+                  <div className="flex items-center gap-4 text-brand-dark">
+                    <span className="flex items-center justify-center w-6 h-6 rounded-full border border-brand-accent/30 text-[10px] font-bold text-brand-accent">01</span>
+                    <h2 className="text-[11px] uppercase tracking-[0.4em] font-bold">Dados de Contato</h2>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-black uppercase tracking-wider">Nome Completo</label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-2">
+                      <label className="text-[9px] uppercase tracking-[0.2em] font-bold text-brand-muted ml-1">Nome Completo</label>
                       <input 
                         required
-                        className="w-full bg-white/50 border border-brand-gold/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-pink/20 text-sm text-black"
+                        placeholder="Ex: Maria Clara Silva"
+                        className="w-full bg-transparent border-b border-black/10 py-3 focus:border-brand-accent transition-colors focus:outline-none text-[13px] font-medium"
                         value={formData.name}
                         onChange={e => setFormData({ ...formData, name: e.target.value })}
                       />
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-black uppercase tracking-wider">WhatsApp (com DDD)</label>
+                    <div className="space-y-2">
+                      <label className="text-[9px] uppercase tracking-[0.2em] font-bold text-brand-muted ml-1">WhatsApp</label>
                       <input 
                         required
-                        className="w-full bg-white/50 border border-brand-gold/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-pink/20 text-sm text-black"
+                        className="w-full bg-transparent border-b border-black/10 py-3 focus:border-brand-accent transition-colors focus:outline-none text-[13px] font-medium"
                         placeholder="77 99999-9999"
                         value={formData.phone}
                         onChange={e => setFormData({ ...formData, phone: e.target.value })}
                       />
                     </div>
                   </div>
-                </div>
+                </section>
 
-                <div className="frosted-glass p-8 rounded-3xl shadow-sm space-y-6">
-                  <div className="flex items-center gap-2 text-brand-pink font-bold mb-4">
-                    <Truck size={20} />
-                    <span className="uppercase text-[10px] tracking-widest leading-none">Endereço de Entrega</span>
+                {/* 2. Shipping Address */}
+                <section className="space-y-8">
+                  <div className="flex items-center gap-4 text-brand-dark">
+                    <span className="flex items-center justify-center w-6 h-6 rounded-full border border-brand-accent/30 text-[10px] font-bold text-brand-accent">02</span>
+                    <h2 className="text-[11px] uppercase tracking-[0.4em] font-bold">Endereço de Entrega</h2>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-black uppercase tracking-wider">CEP</label>
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+                    <div className="md:col-span-4 space-y-2">
+                      <label className="text-[9px] uppercase tracking-[0.2em] font-bold text-brand-muted ml-1">CEP</label>
                       <input 
                         required
-                        className="w-full bg-white/50 border border-brand-gold/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-pink/20 text-sm text-black"
+                        className="w-full bg-transparent border-b border-brand-dark/10 py-3 focus:border-brand-accent transition-colors focus:outline-none text-[13px] font-medium"
                         placeholder="00000-000"
                         maxLength={8}
                         value={formData.cep}
@@ -209,212 +224,240 @@ export function Checkout({ cart, clearCart }: CheckoutProps) {
                         onBlur={handleCepBlur}
                       />
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-black uppercase tracking-wider">Rua/Logradouro</label>
+                    <div className="md:col-span-8 space-y-2">
+                      <label className="text-[9px] uppercase tracking-[0.2em] font-bold text-brand-muted ml-1">Rua / Av.</label>
                       <input 
                         required
-                        className="w-full bg-white/50 border border-brand-gold/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-pink/20 text-sm text-black"
+                        className="w-full bg-transparent border-b border-brand-dark/10 py-3 focus:border-brand-accent transition-colors focus:outline-none text-[13px] font-medium"
                         value={formData.street}
                         onChange={e => setFormData({ ...formData, street: e.target.value })}
                       />
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-black uppercase tracking-wider">Número</label>
+                    <div className="md:col-span-3 space-y-2">
+                      <label className="text-[9px] uppercase tracking-[0.2em] font-bold text-brand-muted ml-1">Número</label>
                       <input 
                         required
-                        className="w-full bg-white/50 border border-brand-gold/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-pink/20 text-sm text-black"
+                        className="w-full bg-transparent border-b border-brand-dark/10 py-3 focus:border-brand-accent transition-colors focus:outline-none text-[13px] font-medium"
                         value={formData.number}
                         onChange={e => setFormData({ ...formData, number: e.target.value })}
                       />
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-black uppercase tracking-wider">Bairro</label>
+                    <div className="md:col-span-9 space-y-2">
+                      <label className="text-[9px] uppercase tracking-[0.2em] font-bold text-brand-muted ml-1">Bairro</label>
                       <input 
                         required
-                        className="w-full bg-white/50 border border-brand-gold/10 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-pink/20 text-sm text-black"
+                        className="w-full bg-transparent border-b border-brand-dark/10 py-3 focus:border-brand-accent transition-colors focus:outline-none text-[13px] font-medium"
                         value={formData.neighborhood}
                         onChange={e => setFormData({ ...formData, neighborhood: e.target.value })}
                       />
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-black uppercase tracking-wider">Cidade</label>
+                    <div className="md:col-span-8 space-y-2">
+                      <label className="text-[9px] uppercase tracking-[0.2em] font-bold text-brand-muted ml-1">Cidade</label>
                       <input 
                         required
                         readOnly
-                        className="w-full bg-gray-50 border border-brand-gold/10 px-4 py-3 rounded-xl focus:outline-none text-black text-sm"
+                        className="w-full bg-neutral-50/50 border-b border-brand-dark/10 py-3 focus:outline-none text-[13px] font-medium text-brand-muted"
                         value={formData.city}
                       />
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-black uppercase tracking-wider">Estado</label>
+                    <div className="md:col-span-4 space-y-2">
+                      <label className="text-[9px] uppercase tracking-[0.2em] font-bold text-brand-muted ml-1">Estado</label>
                       <input 
                         required
                         readOnly
-                        className="w-full bg-gray-50 border border-brand-gold/10 px-4 py-3 rounded-xl focus:outline-none text-black text-sm"
+                        className="w-full bg-neutral-50/50 border-b border-brand-dark/10 py-3 focus:outline-none text-[13px] font-medium text-brand-muted"
                         value={formData.state}
                       />
                     </div>
                   </div>
-                </div>
+                </section>
 
-                <div className="frosted-glass p-8 rounded-3xl shadow-sm space-y-6">
-                  <div className="flex items-center gap-2 text-brand-pink font-bold mb-4">
-                    <CreditCard size={20} />
-                    <span className="uppercase text-[10px] tracking-widest">Pagamento</span>
+                {/* 3. Payment Selection */}
+                <section className="space-y-8">
+                  <div className="flex items-center gap-4 text-brand-dark">
+                    <span className="flex items-center justify-center w-6 h-6 rounded-full border border-brand-accent/30 text-[10px] font-bold text-brand-accent">03</span>
+                    <h2 className="text-[11px] uppercase tracking-[0.4em] font-bold">Forma de Atendimento</h2>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center gap-3 bg-brand-pink text-white p-4 rounded-xl shadow-md border border-brand-pink">
-                      <QrCode size={18} />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-center gap-4 border border-brand-accent p-6 bg-neutral-50 relative">
+                      <QrCode size={20} strokeWidth={1} className="text-brand-accent" />
                       <div className="flex-grow">
-                        <p className="text-xs font-bold uppercase tracking-widest">PIX</p>
+                        <p className="text-[11px] font-bold uppercase tracking-widest text-brand-dark">PIX / Transferência</p>
+                        <p className="text-[9px] text-brand-muted mt-1 underline underline-offset-4 decoration-brand-accent/30 italic">Liberação instantânea</p>
                       </div>
-                      <CheckCircle2 size={16} />
+                      <CheckCircle2 size={16} className="text-brand-accent absolute top-4 right-4" />
                     </div>
-                    <div className="flex items-center gap-3 bg-white/30 p-4 rounded-xl border border-brand-gold/20 opacity-60">
-                      <CreditCard size={18} className="text-gray-400" />
-                      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Cartão</p>
+                    <div className="flex items-center gap-4 border border-brand-dark/5 p-6 opacity-40 grayscale pointer-events-none">
+                      <CreditCard size={20} strokeWidth={1} />
+                      <div className="flex-grow">
+                        <p className="text-[11px] font-bold uppercase tracking-widest text-brand-dark">Cartão de Crédito</p>
+                        <p className="text-[9px] mt-1 text-brand-muted">Em breve disponível</p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </section>
 
-                <button 
-                  type="submit" 
-                  disabled={loading || calculatingShipping || !formData.cep}
-                  className="w-full bg-green-500 text-white py-5 rounded-2xl flex items-center justify-center gap-3 font-bold text-lg hover:bg-green-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-xl shadow-green-500/10 uppercase tracking-widest h-16"
-                >
-                  {loading ? 'Processando...' : 'Finalizar e Enviar WhatsApp'}
-                </button>
+                <div className="space-y-6">
+                   <button 
+                    type="submit" 
+                    disabled={loading || calculatingShipping || !formData.cep}
+                    className="button-primary w-full h-16 text-sm flex items-center justify-center gap-4 disabled:opacity-50 disabled:cursor-not-allowed group transition-all"
+                  >
+                    {loading ? (
+                      <span className="animate-pulse">Eternizando seu pedido...</span>
+                    ) : (
+                      <>
+                        Confirmar & Central de WhatsApp
+                        <motion.div animate={{ x: [0, 5, 0] }} transition={{ repeat: Infinity, duration: 1.5 }}>
+                           <Truck size={18} strokeWidth={1.5} />
+                        </motion.div>
+                      </>
+                    )}
+                  </button>
+                  <p className="text-[9px] text-center text-brand-muted uppercase tracking-[0.3em] font-medium">
+                     Ambiente de pagamento 100% seguro & criptografado
+                  </p>
+                </div>
               </form>
             </div>
 
             {/* Summary Side */}
-            <div className="lg:sticky lg:top-32 space-y-6 self-start">
-              <div className="frosted-glass-heavy p-8 rounded-[2rem] shadow-xl">
-                <h2 className="font-serif text-xl font-bold mb-6 flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-brand-dark">
-                    <Package className="text-brand-pink" />
-                    Seu Carrinho
-                  </span>
-                  <span className="text-xs font-normal opacity-60 uppercase tracking-widest">{cart.length} Itens</span>
-                </h2>
+            <aside className="lg:col-span-5 lg:sticky lg:top-36 self-start space-y-10">
+              <div className="border border-black/5 p-10 space-y-10">
+                <div className="space-y-2">
+                   <h3 className="text-[11px] uppercase tracking-[0.5em] font-bold text-brand-dark">Resumo da Sacola</h3>
+                   <div className="w-8 h-[1px] bg-brand-accent" />
+                </div>
                 
-                <div className="space-y-4 max-h-60 overflow-y-auto pr-4 mb-6 thin-scrollbar">
+                <div className="space-y-8 max-h-[350px] overflow-y-auto thin-scrollbar pr-4">
                   {cart.map(item => (
-                    <div key={item.id} className="flex flex-col border-b border-black/5 pb-2">
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="flex items-center gap-2">
-                          <span className="w-5 h-5 bg-white flex items-center justify-center rounded text-[10px] font-bold text-brand-pink">{item.quantity}x</span>
-                          <span className="text-brand-dark font-medium">{item.name}</span>
-                        </span>
-                        <span className="font-bold text-brand-pink">{(item.price * item.quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                    <div key={item.id} className="flex gap-4 group">
+                      <div className="w-16 h-20 bg-neutral-50 overflow-hidden shrink-0">
+                         <img src={item.imageUrl || undefined} alt={item.name} className="w-full h-full object-cover" />
                       </div>
-                      {item.selectedLength && (
-                        <span className="text-[10px] text-brand-gold font-bold uppercase ml-7">Tamanho: {item.selectedLength}</span>
-                      )}
+                      <div className="flex-grow space-y-1">
+                        <div className="flex justify-between items-start">
+                           <p className="text-[10px] uppercase tracking-widest font-bold text-brand-dark leading-tight">{item.name}</p>
+                           <p className="text-[11px] font-medium text-brand-dark">{(item.price * item.quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                        </div>
+                        <div className="flex items-center gap-2 text-brand-muted text-[9px] font-medium uppercase tracking-widest">
+                           <span>Qtd: {item.quantity}</span>
+                           {item.selectedLength && (
+                             <>
+                               <div className="w-1 h-1 rounded-full bg-brand-accent/30" />
+                               <span>Tam: {item.selectedLength}</span>
+                             </>
+                           )}
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
 
-                <div className="space-y-3 pt-4 border-t border-brand-gold/10">
-                  <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-gray-500">
+                <div className="space-y-4 pt-8 border-t border-black/5">
+                  <div className="flex justify-between items-center text-[10px] uppercase tracking-[0.2em] font-medium text-brand-muted">
                     <span>Subtotal</span>
                     <span>{(subtotal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                   </div>
-                  <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-gray-500">
-                    <span>Frete</span>
+                  <div className="flex justify-between items-center text-[10px] uppercase tracking-[0.2em] font-medium text-brand-muted">
+                    <span>Envio Estimado</span>
                     <span>
-                      {calculatingShipping ? 'Calculando...' : (shippingCost).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      {calculatingShipping ? (
+                        <span className="animate-pulse">Calculando...</span>
+                      ) : (
+                        shippingCost > 0 ? (shippingCost).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'Grátis'
+                      )}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center pt-4 mt-4 border-t border-brand-gold/30">
-                    <span className="text-xl font-serif font-bold text-brand-dark">Total</span>
-                    <span className="text-2xl font-bold text-black">
+                  <div className="flex justify-between items-center pt-6 border-t border-brand-accent/20">
+                    <span className="text-xl font-serif text-brand-dark italic">Total</span>
+                    <span className="text-2xl font-bold text-brand-dark">
                       {(total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </span>
                   </div>
                 </div>
               </div>
-              
-              <div className="pix-info bg-[#f0f7f4] p-4 rounded-xl border border-green-200 border-dashed text-[11px] text-green-700 leading-relaxed">
-                 <strong>Pagamento PIX:</strong><br />
-                 CNPJ: 66.366255/0001-80<br />
-                 Escaneie o QR Code após a finalização para liberação imediata.
+
+              <div className="flex items-start gap-4 p-6 bg-neutral-50/80 border border-brand-accent/10">
+                 <ShieldCheck size={20} strokeWidth={1} className="text-brand-accent mt-0.5 shrink-0" />
+                 <div className="space-y-1">
+                    <p className="text-[10px] uppercase tracking-widest font-bold text-brand-dark">Proteção & Logística</p>
+                    <p className="text-[9px] leading-relaxed text-brand-muted font-medium">Asseguramos que sua peça chegue com todo o cuidado necessário. Enviamos o código de rastreamento via WhatsApp.</p>
+                 </div>
               </div>
-            </div>
+            </aside>
           </motion.div>
         ) : (
           <motion.div 
             key="success"
-            initial={{ opacity: 0, scale: 0.9 }}
+            initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="max-w-md mx-auto text-center space-y-8 bg-white p-12 rounded-[3rem] shadow-2xl border border-[#B17A7A]/10"
+            className="max-w-2xl mx-auto text-center space-y-12 py-10"
           >
-            <div className="w-24 h-24 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircle2 size={48} />
-            </div>
-            <div className="space-y-2">
-              <h1 className="text-3xl font-serif font-bold">Pedido Confirmado!</h1>
-              <p className="text-[#3C1A1A]/60">Sua peça exclusiva está quase pronta para brilhar em você.</p>
+            <div className="space-y-6">
+               <motion.div 
+                 initial={{ scale: 0 }}
+                 animate={{ scale: 1 }}
+                 transition={{ type: 'spring', damping: 10, stiffness: 100 }}
+                 className="w-24 h-24 bg-neutral-50 text-brand-accent rounded-full flex items-center justify-center mx-auto"
+               >
+                 <CheckCircle2 size={48} strokeWidth={1} />
+               </motion.div>
+               <div className="space-y-2">
+                  <p className="text-[10px] uppercase tracking-[0.6em] font-medium text-brand-accent">Pedido Recebido</p>
+                  <h1 className="text-5xl font-serif text-brand-dark">Brilho a <span className="italic">Caminho</span></h1>
+                  <p className="text-brand-muted text-sm font-light tracking-[0.05em] max-w-sm mx-auto">Tudo certo! Sua peça exclusiva está sendo separada com todo o amor por nossa equipe.</p>
+               </div>
             </div>
 
-            <div className="bg-[#FDF2F2] p-8 rounded-3xl space-y-6">
-              <p className="text-xs font-bold uppercase tracking-widest text-black">Pague Agora via PIX</p>
-              <div className="bg-white p-4 rounded-2xl inline-block shadow-inner mx-auto mb-4 border-4 border-[#B17A7A]/10">
-                {(() => {
-                  const finalTotal = submittedDetails?.total || 0;
-                  const rawPixKey = (submittedDetails?.pixKey || '66366255000180').replace(/\D/g, '');
-                  const amount = finalTotal.toFixed(2);
-                  const amountLen = amount.length.toString().padStart(2, '0');
-                  const pixPayload = `00020126360014BR.GOV.BCB.PIX0114${rawPixKey}52040000530398654${amountLen}${amount}5802BR5915Deborah Evellyn6008Guanambi62070503***6304`;
-                  return <QRCodeSVG value={pixPayload} size={200} />;
-                })()}
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-[10px] text-[#3C1A1A]/40 uppercase tracking-widest mb-1">Chave PIX (CNPJ)</p>
-                  <p className="font-mono font-bold text-lg select-all">{submittedDetails?.pixKey.includes('/') ? submittedDetails.pixKey : '66.366.255/0001-80'}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-0 border border-black/5 shadow-2xl overflow-hidden bg-white">
+              <div className="p-10 space-y-8 text-left border-b md:border-b-0 md:border-r border-black/5">
+                <div className="space-y-2">
+                   <p className="text-[9px] uppercase tracking-[0.3em] font-bold text-brand-muted">Instruções de Pagamento</p>
+                   <h3 className="text-xl font-serif text-brand-dark">Pagamento Instantâneo PIX</h3>
                 </div>
-                <div className="bg-white p-4 rounded-xl text-left border border-[#B17A7A]/10">
-                   <div className="flex justify-between font-bold text-sm mb-1">
-                     <span>Valor Total</span>
-                     <span className="text-black">{(submittedDetails?.total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                
+                <div className="space-y-5">
+                   <div className="space-y-1">
+                      <p className="text-[8px] uppercase tracking-[0.4em] font-medium text-brand-muted">Chave CNPJ</p>
+                      <p className="font-mono text-sm font-bold text-brand-dark select-all p-3 bg-neutral-50 border border-neutral-100 rounded">
+                        {submittedDetails?.pixKey.includes('/') ? submittedDetails.pixKey : '66.366.255/0001-80'}
+                      </p>
                    </div>
-                   <p className="text-[10px] text-[#3C1A1A]/40">Favor enviar o comprovante no WhatsApp.</p>
+                   <div className="flex justify-between items-center bg-brand-dark text-white p-4">
+                      <span className="text-[10px] uppercase tracking-[0.3em] font-medium text-brand-accent">Valor Total</span>
+                      <span className="text-lg font-bold">{(submittedDetails?.total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                   </div>
+                   <p className="text-[9px] italic text-brand-muted leading-relaxed">
+                      * Por favor, após o pagamento <span className="font-bold text-brand-dark">envie o comprovante</span> na nossa conversa de WhatsApp que abriu. Isso agiliza o seu envio!
+                   </p>
                 </div>
               </div>
-            </div>
 
-            <p className="text-xs text-[#3C1A1A]/60">Enviamos os detalhes do pedido e o link de pagamento para o seu WhatsApp também!</p>
+              <div className="p-10 flex flex-col items-center justify-center space-y-6 bg-neutral-50/30">
+                <div className="bg-white p-6 shadow-xl border border-black/5">
+                  {(() => {
+                    const finalTotal = submittedDetails?.total || 0;
+                    const rawPixKey = (submittedDetails?.pixKey || '66366255000180').replace(/\D/g, '');
+                    const amount = finalTotal.toFixed(2);
+                    const amountLen = amount.length.toString().padStart(2, '0');
+                    const pixPayload = `00020126360014BR.GOV.BCB.PIX0114${rawPixKey}52040000530398654${amountLen}${amount}5802BR5915Deborah Evellyn6008Guanambi62070503***6304`;
+                    return <QRCodeSVG value={pixPayload} size={220} />;
+                  })()}
+                </div>
+                <p className="text-[10px] uppercase tracking-[0.4em] font-medium text-brand-muted">Escaneie para Pagar</p>
+              </div>
+            </div>
             
             <button 
               onClick={() => navigate('/')}
-              className="w-full bg-[#3C1A1A] text-white py-4 rounded-xl font-bold hover:bg-[#B17A7A] transition-all"
+              className="button-outline px-16 group"
             >
-              Voltar para a Loja
+              Retornar à Boutique
             </button>
           </motion.div>
         )}
       </AnimatePresence>
     </div>
-  );
-}
-
-function ShieldCheck({ size, className }: { size: number, className: string }) {
-  return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
-      className={className}
-    >
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
-      <path d="m9 12 2 2 4-4" />
-    </svg>
   );
 }

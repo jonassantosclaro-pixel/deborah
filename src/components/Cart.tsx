@@ -20,116 +20,120 @@ export function Cart({ items, onClose, onRemove, onUpdateQuantity }: CartProps) 
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
+        className="fixed inset-0 bg-brand-dark/40 backdrop-blur-md z-50"
       />
       <motion.div 
         initial={{ x: '100%' }}
         animate={{ x: 0 }}
         exit={{ x: '100%' }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="fixed top-0 right-0 h-full w-full max-w-md bg-white/70 backdrop-blur-[20px] shadow-2xl z-50 flex flex-col border-l border-brand-gold/20"
+        className="fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-50 flex flex-col border-l border-black/5"
       >
-        <div className="p-6 border-b border-brand-gold/10 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <ShoppingBag className="text-brand-pink" />
-            <h2 className="font-serif text-xl font-bold text-brand-dark">Meu Carrinho</h2>
+        <div className="p-8 border-b border-black/5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <ShoppingBag className="text-brand-accent" size={20} strokeWidth={1.5} />
+            <h2 className="font-serif text-2xl text-brand-dark">Sua Sacola</h2>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-brand-pink/10 rounded-full transition-colors text-brand-dark">
-            <X size={20} />
+          <button onClick={onClose} className="p-2 -mr-2 text-brand-muted hover:text-brand-dark transition-colors">
+            <X size={20} strokeWidth={1} />
           </button>
         </div>
 
-        <div className="flex-grow overflow-y-auto p-6 space-y-6">
+        <div className="flex-grow overflow-y-auto p-8 thin-scrollbar">
           {items.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center space-y-4">
-              <ShoppingBag size={48} className="text-brand-gold/20" />
-              <p className="text-brand-dark/60 font-medium">Seu carrinho está vazio.</p>
+            <div className="h-full flex flex-col items-center justify-center text-center space-y-6">
+              <ShoppingBag size={48} strokeWidth={0.5} className="text-brand-accent/20" />
+              <div className="space-y-2">
+                 <p className="text-sm font-medium text-brand-dark">Sua sacola está vazia</p>
+                 <p className="text-[10px] uppercase tracking-widest text-brand-muted">Descubra nossas peças exclusivas</p>
+              </div>
               <button 
                 onClick={onClose}
-                className="text-black font-bold uppercase text-xs tracking-widest hover:underline underline-offset-8"
+                className="button-outline text-[10px] w-full"
               >
-                Continuar comprando
+                Continuar explorando
               </button>
             </div>
           ) : (
-            items.map((item) => (
-              <div key={item.id} className="flex gap-4 group bg-white/40 p-3 rounded-2xl border border-white/60">
-                <div className="w-20 h-20 bg-gray-50 rounded-lg overflow-hidden shrink-0 border border-brand-gold/5">
-                  <img src={item.imageUrl || undefined} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                </div>
-                <div className="flex-grow">
-                  <div className="flex justify-between">
-                    <h3 className="font-bold text-[13px] text-brand-dark">{item.name}</h3>
-                    <button onClick={() => onRemove(item.id)} className="text-black hover:text-red-500 transition-colors">
-                      <Trash2 size={16} />
-                    </button>
+            <div className="space-y-10">
+              {items.map((item) => (
+                <div key={item.id} className="flex gap-6 group">
+                  <div className="w-24 h-32 bg-neutral-50 overflow-hidden shrink-0">
+                    <img src={item.imageUrl || undefined} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   </div>
-                  <p className="text-[10px] uppercase tracking-wider text-black mb-1 truncate max-w-[200px] font-medium">
-                    {item.description}
-                  </p>
-
-                  {item.selectedComplements && item.selectedComplements.length > 0 && (
-                    <div className="mb-2 space-y-0.5">
-                      {item.selectedComplements.map(c => (
-                        <div key={c.id} className="text-[9px] text-black font-bold flex items-center gap-1 uppercase tracking-widest leading-tight">
-                          + {c.name}
+                  <div className="flex-grow flex flex-col">
+                    <div className="flex justify-between items-start mb-2">
+                       <h3 className="text-[11px] uppercase tracking-[0.2em] font-medium text-brand-dark leading-tight">{item.name}</h3>
+                       <button onClick={() => onRemove(item.id)} className="text-brand-muted hover:text-red-500 transition-colors">
+                         <Trash2 size={14} strokeWidth={1.5} />
+                       </button>
+                    </div>
+                    
+                    <div className="flex-grow">
+                      {item.selectedComplements && item.selectedComplements.length > 0 && (
+                        <div className="mb-3 space-y-1">
+                          {item.selectedComplements.map(c => (
+                            <div key={c.id} className="text-[8px] text-brand-accent uppercase tracking-widest font-bold">
+                              + {c.name}
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  )}
+                      )}
 
-                  {item.personalization && (
-                    <div className="mb-2 bg-brand-pink/5 p-2 rounded-lg border border-brand-pink/10">
-                       <p className="text-[9px] uppercase tracking-widest font-bold text-brand-pink">Personalização:</p>
-                       <p className="text-[11px] font-bold text-brand-dark">{item.personalization}</p>
-                    </div>
-                  )}
+                      {item.personalization && (
+                        <div className="mb-3 p-2 border-l-2 border-brand-accent bg-neutral-50">
+                           <p className="text-[8px] uppercase tracking-widest font-bold text-brand-accent mb-0.5">Personalização:</p>
+                           <p className="text-[10px] italic font-medium text-brand-dark">{item.personalization}</p>
+                        </div>
+                      )}
 
-                  {item.selectedLength && (
-                    <div className="mb-2 bg-brand-gold/5 p-2 rounded-lg border border-brand-gold/10">
-                       <p className="text-[9px] uppercase tracking-widest font-bold text-brand-gold">Tamanho Escolhido:</p>
-                       <p className="text-[11px] font-bold text-brand-dark">{item.selectedLength}</p>
+                      {item.selectedLength && (
+                        <div className="mb-3 p-2 border-l-2 border-brand-dark bg-neutral-50">
+                           <p className="text-[8px] uppercase tracking-widest font-bold text-brand-dark mb-0.5">Tamanho:</p>
+                           <p className="text-[10px] font-medium">{item.selectedLength}</p>
+                        </div>
+                      )}
                     </div>
-                  )}
 
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center border border-brand-gold/20 rounded-lg bg-white/60 overflow-hidden">
-                      <button onClick={() => onUpdateQuantity(item.id, -1)} className="p-1 hover:bg-brand-pink/10 transition-colors">
-                        <Minus size={14} />
-                      </button>
-                      <span className="w-8 text-center text-xs font-bold">{item.quantity}</span>
-                      <button onClick={() => onUpdateQuantity(item.id, 1)} className="p-1 hover:bg-brand-pink/10 transition-colors">
-                        <Plus size={14} />
-                      </button>
+                    <div className="flex items-center justify-between mt-4">
+                      <div className="flex items-center border border-black/10 text-brand-dark">
+                        <button onClick={() => onUpdateQuantity(item.id, -1)} className="p-2 hover:bg-neutral-50 transition-colors">
+                          <Minus size={12} />
+                        </button>
+                        <span className="w-6 text-center text-[10px] font-bold">{item.quantity}</span>
+                        <button onClick={() => onUpdateQuantity(item.id, 1)} className="p-2 hover:bg-neutral-50 transition-colors">
+                          <Plus size={12} />
+                        </button>
+                      </div>
+                      <span className="text-xs font-bold text-brand-dark">
+                        {(item.price * item.quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </span>
                     </div>
-                    <span className="font-bold text-brand-pink">
-                      {(item.price * item.quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                    </span>
                   </div>
                 </div>
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </div>
 
         {items.length > 0 && (
-          <div className="p-6 bg-brand-gold/5 border-t border-brand-gold/10 space-y-4">
-            <div className="flex justify-between items-center bg-white/40 p-4 rounded-xl">
-              <span className="text-xs font-bold uppercase tracking-widest text-black">Subtotal</span>
-              <span className="font-bold text-xl text-brand-pink">
+          <div className="p-8 border-t border-black/5 space-y-6">
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] uppercase tracking-[0.2em] font-medium text-brand-muted">Subtotal estimado</span>
+              <span className="text-xl font-bold text-brand-dark">
                 {(subtotal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
               </span>
             </div>
             <Link 
               to="/checkout" 
               onClick={onClose}
-              className="w-full bg-brand-pink text-white py-4 rounded-xl flex items-center justify-center gap-2 font-bold uppercase tracking-widest text-sm hover:bg-brand-dark transition-all shadow-lg active:scale-[0.98]"
+              className="button-primary w-full flex items-center justify-center gap-4"
             >
-              Finalizar Pedido
-              <ArrowRight size={18} />
+              Finalizar Atendimento
+              <ArrowRight size={14} />
             </Link>
-            <p className="text-[9px] text-center text-black uppercase tracking-[0.2em] font-bold">
-              Frete calculado no checkout
+            <p className="text-[8px] text-center text-brand-muted uppercase tracking-[0.3em]">
+              Frete e impostos calculados no pagamento
             </p>
           </div>
         )}

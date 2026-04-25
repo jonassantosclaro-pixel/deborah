@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
-import { collection, onSnapshot, query, where, orderBy } from 'firebase/firestore';
-import { Product, Category, SubCategory, CartItem, Complement } from '../types';
+import { collection, onSnapshot, query, where, limit } from 'firebase/firestore';
+import { Product, Category, SubCategory, CartItem, Complement, Settings } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { ShoppingCart, Heart, Search, Filter, Sparkles, ChevronRight, X, Plus } from 'lucide-react';
+import { ShoppingBag, ChevronRight, X, Plus, Sparkle } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 interface StoreProps {
@@ -22,8 +22,13 @@ export function Store({ onAddToCart }: StoreProps) {
   const [selectedComplements, setSelectedComplements] = useState<Complement[]>([]);
   const [personalization, setPersonalization] = useState<string>('');
   const [selectedLength, setSelectedLength] = useState<string>('45cm');
+  const [settings, setSettings] = useState<Settings | null>(null);
 
   useEffect(() => {
+    const unsubSettings = onSnapshot(query(collection(db, 'settings'), limit(1)), (s) => {
+      if (!s.empty) setSettings({ id: s.docs[0].id, ...s.docs[0].data() } as Settings);
+    });
+
     const qProducts = query(collection(db, 'products'), where('active', '==', true));
     const unsubscribeProducts = onSnapshot(qProducts, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
@@ -42,6 +47,7 @@ export function Store({ onAddToCart }: StoreProps) {
     });
 
     return () => {
+      unsubSettings();
       unsubscribeProducts();
       unsubscribeCategories();
       unsubscribeSub();
@@ -86,131 +92,137 @@ export function Store({ onAddToCart }: StoreProps) {
   };
 
   return (
-    <div className="space-y-12 pb-20 pt-8">
-      {/* Main Grid Layout */}
-      <div className="max-w-7xl mx-auto px-4 md:px-8 grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-8">
-        
-        {/* Sidebar Filters */}
-        <aside className="frosted-glass-gold p-6 rounded-[15px] self-start space-y-8 hidden lg:block">
-          <div>
-            <h3 className="text-xs font-bold text-black uppercase tracking-widest mb-4">Categorias</h3>
-            <ul className="space-y-4">
-              <li 
-                onClick={() => { setSelectedCategory('all'); setSelectedSubCategory('all'); }}
-                className={cn(
-                  "text-sm cursor-pointer border-b border-black/5 pb-2 transition-colors",
-                  selectedCategory === 'all' ? "text-brand-pink font-bold" : "text-black hover:text-brand-pink"
-                )}
-              >
-                Todas as Peças
-              </li>
-              {categories.map(cat => (
-                <li key={cat.id} className="space-y-2">
-                  <div 
-                    onClick={() => { setSelectedCategory(cat.id); setSelectedSubCategory('all'); }}
-                    className={cn(
-                      "text-sm cursor-pointer border-b border-black/5 pb-2 transition-colors flex justify-between items-center",
-                      selectedCategory === cat.id ? "text-brand-pink font-bold" : "text-black hover:text-brand-pink"
-                    )}
-                  >
-                    {cat.name}
-                    <ChevronRight size={14} className={cn("transition-transform", selectedCategory === cat.id && "rotate-90")} />
-                  </div>
-                  
-                  {selectedCategory === cat.id && (
-                    <ul className="pl-4 space-y-2 pt-2 border-l border-brand-gold/20">
-                      {subCategories.filter(s => s.categoryId === cat.id).map(sub => (
-                        <li 
-                          key={sub.id}
-                          onClick={(e) => { e.stopPropagation(); setSelectedSubCategory(sub.id); }}
-                          className={cn(
-                            "text-[10px] uppercase tracking-widest cursor-pointer transition-colors",
-                            selectedSubCategory === sub.id ? "text-brand-gold font-bold" : "text-black hover:text-brand-gold"
-                          )}
-                        >
-                          • {sub.name}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="text-xs font-bold text-black uppercase tracking-widest mb-4">Complementos</h3>
-            <div className="text-[11px] text-black space-y-1 font-medium">
-              <p>✓ Banho de Ouro 18k</p>
-              <p>✓ Banho de Prata 925</p>
-              <p>✓ Gravação a Laser</p>
-            </div>
-          </div>
-        </aside>
-
-        {/* Product Grid Area */}
-        <section className="space-y-8">
-          <div className="flex items-center justify-between">
-            <h2 className="font-serif text-3xl font-bold text-brand-dark">
-              {selectedCategory === 'all' ? 'Coleção Completa' : categories.find(c => c.id === selectedCategory)?.name}
-            </h2>
-            <div className="flex items-center gap-2 text-xs font-bold text-black uppercase tracking-[0.2em]">
-              Exclusividade <Sparkles size={14} />
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-              {[1, 2, 3, 4, 5, 6].map(i => (
-                <div key={i} className="bg-white rounded-xl p-4 space-y-4 animate-pulse h-80 shadow-sm" />
-              ))}
-            </div>
-          ) : filteredProducts.length === 0 ? (
-            <div className="text-center py-32 frosted-glass rounded-3xl border-2 border-dashed border-brand-gold/20">
-              <p className="text-brand-dark/40 font-medium">Nenhuma joia disponível no momento.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredProducts.map((product, idx) => (
-                <motion.div 
-                  key={product.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.05 }}
-                  className="bg-white rounded-xl p-5 shadow-[0_4px_15px_rgba(0,0,0,0.03)] border border-gray-100 flex flex-col items-center text-center group"
-                >
-                  <div className="w-full aspect-square bg-gray-50 rounded-lg overflow-hidden mb-4 relative">
-                    <img 
-                      src={product.imageUrl || undefined} 
-                      alt={product.name} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="p-2 bg-white/80 backdrop-blur-sm rounded-full text-brand-pink shadow-md">
-                        <Heart size={16} />
-                      </button>
-                    </div>
-                  </div>
-                  <h3 className="text-sm font-bold mb-1 h-10 overflow-hidden line-clamp-2">{product.name}</h3>
-                  <p className="text-black font-bold text-lg mb-4">
-                    {(product.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </p>
-                  <button 
-                    onClick={() => {
-                      setSelectedProduct(product);
-                    }}
-                    className="w-full bg-brand-pink text-white py-2.5 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-brand-dark transition-all shadow-md active:scale-95"
-                  >
-                    Personalizar e Comprar
-                  </button>
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </section>
+    <div className="pb-32 px-4 md:px-12">
+      {/* Centered Luxury Header */}
+      <div className="max-w-4xl mx-auto text-center space-y-4 pt-16 pb-20">
+         <motion.div 
+           initial={{ opacity: 0, y: 10 }}
+           animate={{ opacity: 1, y: 0 }}
+           className="inline-flex items-center gap-3 text-[10px] uppercase tracking-[0.4em] font-medium text-brand-muted"
+         >
+           <div className="w-10 h-[1px] bg-brand-muted/30" />
+           Exclusividade & Brilho
+           <div className="w-10 h-[1px] bg-brand-muted/30" />
+         </motion.div>
+         <motion.h1 
+           initial={{ opacity: 0, y: 10 }}
+           animate={{ opacity: 1, y: 0 }}
+           transition={{ delay: 0.1 }}
+           className="text-4xl md:text-6xl font-serif text-brand-dark"
+         >
+           Deborah Joias
+         </motion.h1>
+         <motion.p 
+           initial={{ opacity: 0, y: 10 }}
+           animate={{ opacity: 1, y: 0 }}
+           transition={{ delay: 0.2 }}
+           className="text-sm text-brand-muted font-light max-w-lg mx-auto"
+         >
+           Explore nossa coleção de semijoias premium e personalizadas, criadas para eternizar seus melhores momentos.
+         </motion.p>
       </div>
 
-      {/* Product Detail / Complements Modal */}
+      {/* Minimalism Filter Bar */}
+      <div className="max-w-[1400px] mx-auto border-y border-brand-dark/5 py-8 mb-16 flex flex-wrap items-center justify-center gap-x-12 gap-y-6">
+        <button 
+          onClick={() => { setSelectedCategory('all'); setSelectedSubCategory('all'); }}
+          className={cn(
+            "text-[11px] uppercase tracking-[0.2em] transition-all relative py-1",
+            selectedCategory === 'all' ? "text-brand-dark font-bold after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-brand-accent" : "text-brand-muted hover:text-brand-dark"
+          )}
+        >
+          Coleção Geral
+        </button>
+        {categories.map(cat => (
+          <div key={cat.id} className="relative group">
+            <button 
+              onClick={() => { setSelectedCategory(cat.id); setSelectedSubCategory('all'); }}
+              className={cn(
+                "text-[11px] uppercase tracking-[0.2em] transition-all relative py-1",
+                selectedCategory === cat.id ? "text-brand-dark font-bold after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-brand-accent" : "text-brand-muted hover:text-brand-dark"
+              )}
+            >
+              {cat.name}
+            </button>
+            
+            {selectedCategory === cat.id && subCategories.some(s => s.categoryId === cat.id) && (
+              <div className="absolute top-full left-1/2 -translate-x-1/2 pt-4 flex gap-4 min-w-[200px] justify-center items-center">
+                 {subCategories.filter(s => s.categoryId === cat.id).map(sub => (
+                   <button
+                     key={sub.id}
+                     onClick={() => setSelectedSubCategory(sub.id)}
+                     className={cn(
+                       "text-[9px] uppercase tracking-widest px-3 py-1 rounded-full border transition-all",
+                       selectedSubCategory === sub.id ? "bg-brand-dark border-brand-dark text-white" : "border-brand-dark/5 text-brand-muted hover:border-brand-dark"
+                     )}
+                   >
+                     {sub.name}
+                   </button>
+                 ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Product Grid Area */}
+      <div className="max-w-[1400px] mx-auto">
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-16">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+              <div key={i} className="aspect-[3/4] bg-neutral-100 animate-pulse rounded-lg" />
+            ))}
+          </div>
+        ) : filteredProducts.length === 0 ? (
+          <div className="text-center py-40 border border-dashed border-brand-dark/10 rounded-2xl">
+            <p className="text-brand-muted text-xs uppercase tracking-widest">Nenhuma peça encontrada nesta categoria.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-16">
+            {filteredProducts.map((product, idx) => (
+              <motion.div 
+                key={product.id}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.05 }}
+                className="group cursor-pointer"
+                onClick={() => setSelectedProduct(product)}
+              >
+                <div className="aspect-[3/4] overflow-hidden bg-neutral-50 mb-6 relative">
+                  <img 
+                    src={product.imageUrl || undefined} 
+                    alt={product.name} 
+                    className="w-full h-full object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-110"
+                  />
+                  
+                  {/* Subtle Overlays */}
+                  <div className="absolute inset-0 bg-brand-dark/0 group-hover:bg-brand-dark/5 transition-colors duration-500" />
+                  
+                  {/* Luxury Action Overlay */}
+                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
+                     <button className="bg-white px-6 py-3 whitespace-nowrap shadow-xl text-[10px] uppercase font-bold tracking-[0.2em] text-brand-dark flex items-center gap-2">
+                       Personalizar <Sparkle size={12} className="text-brand-accent" />
+                     </button>
+                  </div>
+                </div>
+                
+                <div className="space-y-2 text-center px-4">
+                  <h3 className="text-[11px] uppercase tracking-[0.2em] font-medium text-brand-dark transition-colors">{product.name}</h3>
+                  <div className="flex items-center justify-center gap-4">
+                    <div className="h-[1px] w-4 bg-brand-accent/30" />
+                    <p className="text-sm font-semibold tracking-wider text-brand-dark">
+                      {(product.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </p>
+                    <div className="h-[1px] w-4 bg-brand-accent/30" />
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Product Detail Modal */}
       <AnimatePresence>
         {selectedProduct && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -219,142 +231,150 @@ export function Store({ onAddToCart }: StoreProps) {
                animate={{ opacity: 1 }}
                exit={{ opacity: 0 }}
                onClick={() => { setSelectedProduct(null); setPersonalization(''); }}
-               className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+               className="absolute inset-0 bg-brand-dark/40 backdrop-blur-md"
              />
              <motion.div 
-               initial={{ scale: 0.9, opacity: 0, y: 20 }}
+               initial={{ scale: 0.95, opacity: 0, y: 10 }}
                animate={{ scale: 1, opacity: 1, y: 0 }}
-               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-               className="bg-white w-full max-w-xl rounded-[2.5rem] overflow-hidden shadow-2xl relative z-10 flex flex-col md:flex-row max-h-[90vh]"
+               exit={{ scale: 0.95, opacity: 0, y: 10 }}
+               className="bg-white w-full max-w-4xl h-fit max-h-[90vh] rounded-lg overflow-hidden shadow-2xl relative z-10 flex flex-col md:grid md:grid-cols-2"
              >
-                <div className="w-full md:w-1/2 aspect-square md:h-auto bg-gray-50">
+                <div className="bg-neutral-50 h-64 md:h-full">
                   <img src={selectedProduct.imageUrl || undefined} className="w-full h-full object-cover" />
                 </div>
-                <div className="w-full md:w-1/2 p-8 flex flex-col h-full overflow-y-auto">
-                   <div className="flex-grow space-y-6">
-                      <div>
-                        <h2 className="text-2xl font-serif font-bold text-brand-dark">{selectedProduct.name}</h2>
-                        <p className="text-black font-bold text-xl mt-1">{(selectedProduct.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                      </div>
-                      
-                      <p className="text-xs text-black leading-relaxed italic">{selectedProduct.description}</p>
-
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-black uppercase tracking-widest">Nome para Personalização (Opcional)</label>
-                        <input 
-                          type="text" 
-                          placeholder="Ex: Maria" 
-                          className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-xs outline-none focus:ring-2 focus:ring-brand-pink/10"
-                          value={personalization}
-                          onChange={e => setPersonalization(e.target.value)}
-                        />
-                      </div>
-
-                      {(selectedProduct.hasLength || /colar|corrente|cordao|cordão/i.test(selectedProduct.name)) && (
-                        <div className="space-y-3">
-                          <label className="text-[10px] font-bold text-black uppercase tracking-widest">Tamanho da Corrente</label>
-                          <div className="grid grid-cols-4 gap-2">
-                             {['40cm', '45cm', '50cm', '60cm'].map(len => (
-                               <button
-                                 key={len}
-                                 type="button"
-                                 onClick={() => setSelectedLength(len)}
-                                 className={cn(
-                                   "py-2 rounded-lg text-[10px] font-bold border transition-all",
-                                   selectedLength === len ? "bg-brand-gold border-brand-gold text-white" : "bg-white border-brand-gold/20 text-brand-dark hover:border-brand-gold"
-                                 )}
-                               >
-                                 {len}
-                               </button>
-                             ))}
-                          </div>
+                
+                <div className="p-8 md:p-12 overflow-y-auto thin-scrollbar">
+                   <div className="space-y-8 h-full flex flex-col">
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-start">
+                           <h2 className="text-3xl font-serif text-brand-dark leading-tight">{selectedProduct.name}</h2>
+                           <button 
+                             onClick={() => { setSelectedProduct(null); setPersonalization(''); }}
+                             className="p-2 -mr-2 text-brand-muted hover:text-brand-dark"
+                           >
+                             <X size={20} strokeWidth={1} />
+                           </button>
                         </div>
-                      )}
-
-                      {selectedProduct.complements && selectedProduct.complements.length > 0 && (
-                        <div className="space-y-3">
-                          <h4 className="text-[10px] font-bold text-black uppercase tracking-widest border-b border-brand-gold/10 pb-2">Complete sua Joia</h4>
-                          <div className="space-y-2">
-                            {selectedProduct.complements.map(comp => (
-                              <label 
-                                key={comp.id} 
-                                className={cn(
-                                  "flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer",
-                                  selectedComplements.find(c => c.id === comp.id) ? "bg-brand-pink/5 border-brand-pink" : "border-gray-100 hover:border-brand-gold/20"
-                                )}
-                              >
-                                <input 
-                                  type="checkbox" 
-                                  className="hidden" 
-                                  checked={selectedComplements.some(c => c.id === comp.id)} 
-                                  onChange={() => toggleComplement(comp)}
-                                />
-                                <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 border border-black/5">
-                                  <img src={comp.imageUrl || undefined} className="w-full h-full object-cover" />
-                                </div>
-                                <div className="flex-grow">
-                                   <p className="text-[11px] font-bold text-brand-dark">{comp.name}</p>
-                                   <p className="text-[10px] text-brand-pink font-bold">+ {(comp.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                                </div>
-                                <div className={cn(
-                                  "w-5 h-5 rounded-full border flex items-center justify-center transition-colors",
-                                  selectedComplements.find(c => c.id === comp.id) ? "bg-brand-pink border-brand-pink" : "border-gray-300"
-                                )}>
-                                  {selectedComplements.find(c => c.id === comp.id) && <Plus size={12} className="text-white" />}
-                                </div>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                   </div>
-
-                   <div className="pt-8 mt-6 border-t border-brand-gold/10">
-                      <div className="flex justify-between items-center mb-4">
-                        <span className="text-[10px] font-bold text-black uppercase tracking-widest">Valor Final</span>
-                        <span className="text-lg font-bold text-brand-dark">
-                          {((selectedProduct.price + selectedComplements.reduce((acc, c) => acc + c.price, 0))).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                        </span>
+                        <p className="text-xl font-medium tracking-tight text-brand-accent">{(selectedProduct.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                        <p className="text-xs text-brand-muted leading-relaxed font-light">{selectedProduct.description}</p>
                       </div>
-                      <button 
-                        onClick={handleAddToCart}
-                        className="w-full bg-brand-pink text-white py-4 rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-brand-dark transition-all shadow-xl shadow-brand-pink/20"
-                      >
-                        Confirmar e Adicionar
-                      </button>
+
+                      <div className="space-y-6 flex-grow">
+                        {/* Personalization Section */}
+                        <div className="space-y-3">
+                          <label className="text-[10px] font-bold text-brand-dark uppercase tracking-widest">Iniciais ou Nome para Gravação</label>
+                          <input 
+                            type="text" 
+                            placeholder="Sua personalização aqui..." 
+                            className="w-full bg-neutral-50 border-b border-brand-dark/10 py-3 text-xs outline-none focus:border-brand-accent transition-colors"
+                            value={personalization}
+                            onChange={e => setPersonalization(e.target.value)}
+                          />
+                        </div>
+
+                        {/* Length Selection */}
+                        {(selectedProduct.hasLength || /colar|corrente|cordao|cordão/i.test(selectedProduct.name)) && (
+                          <div className="space-y-3">
+                            <label className="text-[10px] font-bold text-brand-dark uppercase tracking-widest">Tamanho da Corrente</label>
+                            <div className="flex gap-4">
+                               {['40cm', '45cm', '50cm', '60cm'].map(len => (
+                                 <button
+                                   key={len}
+                                   type="button"
+                                   onClick={() => setSelectedLength(len)}
+                                   className={cn(
+                                     "text-[10px] font-medium tracking-widest pb-1 border-b-2 transition-all",
+                                     selectedLength === len ? "border-brand-accent text-brand-dark font-bold" : "border-transparent text-brand-muted hover:text-brand-dark"
+                                   )}
+                                 >
+                                   {len}
+                                 </button>
+                               ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Complements */}
+                        {selectedProduct.complements && selectedProduct.complements.length > 0 && (
+                          <div className="space-y-4">
+                            <label className="text-[10px] font-bold text-brand-dark uppercase tracking-widest">Complete sua Peça</label>
+                            <div className="space-y-3">
+                              {selectedProduct.complements.map(comp => (
+                                <div 
+                                  key={comp.id} 
+                                  onClick={() => toggleComplement(comp)}
+                                  className={cn(
+                                    "flex items-center gap-4 p-4 cursor-pointer border transition-all",
+                                    selectedComplements.some(c => c.id === comp.id) ? "border-brand-accent bg-brand-accent/5" : "border-brand-dark/5 hover:border-brand-dark/20"
+                                  )}
+                                >
+                                  <div className="w-12 h-12 bg-neutral-100 rounded overflow-hidden">
+                                     <img src={comp.imageUrl || undefined} className="w-full h-full object-cover" />
+                                  </div>
+                                  <div className="flex-grow">
+                                     <p className="text-[10px] uppercase font-bold tracking-widest">{comp.name}</p>
+                                     <p className="text-[9px] text-brand-accent font-bold">+ {(comp.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                                  </div>
+                                  <div className={cn(
+                                    "w-4 h-4 border flex items-center justify-center",
+                                    selectedComplements.some(c => c.id === comp.id) ? "bg-brand-dark border-brand-dark text-white" : "border-brand-dark/20"
+                                  )}>
+                                    {selectedComplements.some(c => c.id === comp.id) && <Plus size={10} />}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="pt-8 border-t border-brand-dark/5 space-y-6">
+                         <div className="flex justify-between items-center px-2">
+                           <span className="text-[10px] uppercase tracking-widest font-bold">Resumo do Investimento</span>
+                           <span className="text-xl font-bold">
+                             {((selectedProduct.price + selectedComplements.reduce((acc, c) => acc + c.price, 0))).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                           </span>
+                         </div>
+                         <button 
+                           onClick={handleAddToCart}
+                           className="button-primary w-full shadow-lg shadow-brand-dark/10 flex items-center justify-center gap-3"
+                         >
+                           Adicionar à Sacola
+                           <ShoppingBag size={14} />
+                         </button>
+                      </div>
                    </div>
                 </div>
-                <button 
-                  onClick={() => { setSelectedProduct(null); setPersonalization(''); }}
-                  className="absolute top-4 right-4 p-2 bg-white/80 backdrop-blur-sm rounded-full text-brand-dark shadow-md md:text-white md:bg-brand-dark/20 md:hover:bg-brand-dark/40 transition-colors"
-                >
-                  <X size={20} />
-                </button>
              </motion.div>
           </div>
         )}
       </AnimatePresence>
 
-      {/* Featured Banner Soft Version */}
-      <section className="max-w-7xl mx-auto px-4 md:px-8 mt-20">
-        <div className="frosted-glass-heavy p-12 rounded-[2rem] flex flex-col md:flex-row items-center justify-between gap-12 overflow-hidden relative">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-brand-pink/5 rounded-full blur-3xl -mr-32 -mt-32" />
-          <div className="relative z-10 space-y-6 max-w-xl">
-            <h2 className="font-serif text-4xl font-bold leading-tight text-brand-dark">Presenteie com <span className="text-brand-pink">Eternidade</span></h2>
-            <p className="text-black leading-relaxed">Nossas joias personalizadas são criadas com banho premium e alma. Peças únicas para momentos inesquecíveis.</p>
-            <button className="bg-brand-pink text-white px-10 py-4 rounded-full font-bold shadow-lg hover:shadow-brand-pink/20 transition-all flex items-center gap-2">
-              Ver Personalizados <ChevronRight size={18} />
-            </button>
-          </div>
-          <div className="relative z-10 grid grid-cols-2 gap-4 rotate-3">
-             <div className="w-40 h-40 rounded-2xl overflow-hidden border-4 border-white shadow-xl">
-               <img src="https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&q=80&w=300" className="w-full h-full object-cover" />
-             </div>
-             <div className="w-40 h-40 rounded-2xl overflow-hidden border-4 border-white shadow-xl translate-y-8">
-               <img src="https://images.unsplash.com/photo-1611085583191-a3b136727b8a?auto=format&fit=crop&q=80&w=300" className="w-full h-full object-cover" />
-             </div>
-          </div>
-        </div>
+      {/* Featured Collection Section */}
+      <section className="max-w-[1400px] mx-auto mt-40">
+         <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+            <div className="space-y-10 order-2 lg:order-1">
+               <div className="space-y-4">
+                 <p className="text-[10px] uppercase tracking-[0.4em] text-brand-muted">Arte em Metais Nobres</p>
+                 <h2 className="text-5xl md:text-7xl font-serif text-brand-dark leading-tight">Joias que Contam Histórias</h2>
+               </div>
+               <p className="text-sm font-light text-brand-muted leading-relaxed max-w-md">
+                 Cada peça é desenvolvida sob medida, utilizando os melhores materiais e técnicas de acabamento manual. Luxo acessível com a exclusividade que você merece.
+               </p>
+               <button className="button-outline group flex items-center gap-4">
+                 Conheça nosso processo
+                 <ChevronRight size={14} className="group-hover:translate-x-2 transition-transform" />
+               </button>
+            </div>
+            <div className="relative order-1 lg:order-2">
+               <div className="aspect-[4/5] bg-neutral-100 overflow-hidden">
+                 <img 
+                   src={settings?.heroImageUrl || "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&q=80&w=1200"} 
+                   className="w-full h-full object-cover hover:scale-105 transition-transform duration-1000" 
+                 />
+               </div>
+            </div>
+         </div>
       </section>
     </div>
   );

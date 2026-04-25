@@ -1,63 +1,72 @@
-import { motion, useMotionValue, useSpring, useTransform } from 'motion/react';
-import { Sparkles, Hexagon } from 'lucide-react';
-import { useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Sparkle, ShoppingBag, MessageCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { collection, onSnapshot, query, limit } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import { Settings } from '../types';
 
-export function IntroScreen() {
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-
-  // Smooth springs for magnetic tilt effect
-  const springConfig = { damping: 25, stiffness: 150 };
-  const rotateX = useSpring(useTransform(mouseY, [-300, 300], [10, -10]), springConfig);
-  const rotateY = useSpring(useTransform(mouseX, [-300, 300], [-10, 10]), springConfig);
+export function IntroScreen({ onComplete }: { onComplete: () => void }) {
+  const [timeLeft, setTimeLeft] = useState(10);
+  const [whatsapp, setWhatsapp] = useState('5577999110250');
 
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      mouseX.set(e.clientX - window.innerWidth / 2);
-      mouseY.set(e.clientY - window.innerHeight / 2);
+    // Fetch WhatsApp number from settings
+    const unsub = onSnapshot(query(collection(db, 'settings'), limit(1)), (s) => {
+      if (!s.empty) {
+        const data = s.docs[0].data() as Settings;
+        if (data.whatsapp) {
+          // Clean number for wa.me
+          setWhatsapp(data.whatsapp.replace(/\D/g, ''));
+        }
+      }
+    });
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      unsub();
+      clearInterval(timer);
     };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [mouseX, mouseY]);
+  }, []);
+
+  const handleWhatsApp = () => {
+    window.open(`https://wa.me/${whatsapp}`, '_blank');
+    onComplete();
+  };
 
   return (
     <motion.div 
       initial={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.8, ease: "easeInOut" }}
-      className="fixed inset-0 z-[100] bg-[#0A0505] flex flex-col items-center justify-center overflow-hidden"
+      transition={{ duration: 1, ease: "easeInOut" }}
+      className="fixed inset-0 z-[100] bg-[#FDF2F2] flex flex-col items-center justify-center overflow-hidden"
     >
-      {/* Futuristic Grid/Nodes Background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
-        {[...Array(15)].map((_, i) => (
-          <motion.div
-            key={`node-${i}`}
-            initial={{ 
-              x: Math.random() * 100 + "%", 
-              y: Math.random() * 100 + "%",
-              opacity: 0.1
-            }}
-            animate={{ 
-              opacity: [0.1, 0.4, 0.1],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{ 
-              duration: Math.random() * 4 + 2, 
-              repeat: Infinity,
-              ease: "easeInOut" 
-            }}
-            className="absolute text-brand-gold"
-          >
-            <Hexagon size={4} fill="currentColor" />
-          </motion.div>
-        ))}
-        {/* Subtle grid lines */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#d4af3710_1px,transparent_1px),linear-gradient(to_bottom,#d4af3710_1px,transparent_1px)] bg-[size:40px_40px]" />
-      </div>
+      {/* Immersive Background */}
+      <motion.div 
+        initial={{ scale: 1.1, opacity: 0 }}
+        animate={{ scale: 1, opacity: 0.15 }}
+        transition={{ duration: 2, ease: "easeOut" }}
+        className="absolute inset-0 z-0"
+      >
+        <img 
+          src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&q=80&w=2000" 
+          alt="Luxury Jewelry" 
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-white/40" />
+      </motion.div>
 
-      {/* Floating Sparkles (Stardust) */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(40)].map((_, i) => (
+      {/* Luxury Particle System */}
+      <div className="absolute inset-0 pointer-events-none z-10">
+        {[...Array(30)].map((_, i) => (
           <motion.div
             key={i}
             initial={{ 
@@ -67,140 +76,105 @@ export function IntroScreen() {
             }}
             animate={{ 
               y: ["0%", "-10%"],
-              opacity: [0, 0.8, 0],
+              opacity: [0, 0.6, 0],
             }}
             transition={{ 
-              duration: Math.random() * 5 + 3, 
+              duration: Math.random() * 6 + 4, 
               repeat: Infinity,
               delay: Math.random() * 5,
             }}
-            className="absolute text-brand-gold/40"
+            className="absolute text-brand-accent/60"
           >
-            <Sparkles size={Math.random() * 12 + 4} />
+            <Sparkle size={Math.random() * 10 + 4} />
           </motion.div>
         ))}
       </div>
 
-      {/* Main Logo Container with 3D Tilt */}
-      <motion.div
-        style={{ rotateX, rotateY, perspective: 1000 }}
-        className="relative flex flex-col items-center"
-      >
+      {/* Main Content Portal */}
+      <div className="relative z-20 w-full max-w-lg px-8 text-center flex flex-col items-center">
         <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 1.5, ease: "easeOut" }}
-          className="relative"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1.2, ease: "easeOut" }}
+          className="mb-16 space-y-4"
         >
-          {/* Futuristic Energy Aura */}
-          <motion.div 
-            animate={{ 
-              scale: [1, 1.2, 1],
-              opacity: [0.2, 0.5, 0.2],
-              background: [
-                "radial-gradient(circle, rgba(212,175,55,0.15) 0%, transparent 70%)",
-                "radial-gradient(circle, rgba(212,175,55,0.25) 0%, transparent 70%)",
-                "radial-gradient(circle, rgba(212,175,55,0.15) 0%, transparent 70%)"
-              ]
-            }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute inset-[-120px] blur-[80px] rounded-full"
-          />
-
-          {/* Dynamic "Orbit" Rings */}
-          {[1, 2, 3].map((ring) => (
-            <motion.div 
-              key={`ring-${ring}`}
-              animate={{ rotate: ring % 2 === 0 ? 360 : -360 }}
-              transition={{ duration: 10 + ring * 5, repeat: Infinity, ease: "linear" }}
-              className="absolute rounded-full border border-brand-gold/10"
-              style={{
-                inset: -(ring * 25),
-                borderWidth: '1px',
-                opacity: 0.5 - (ring * 0.1)
-              }}
-            >
-              {/* Energy pulse on ring */}
-              <motion.div 
-                animate={{ opacity: [0, 1, 0], scale: [1, 1.02, 1] }}
-                transition={{ duration: 2, repeat: Infinity, delay: ring }}
-                className="absolute inset-0 border border-brand-gold/20 rounded-full"
-              />
-            </motion.div>
-          ))}
-          
-          {/* The Logo with Holographic Elements */}
-          <div className="relative group">
-            <motion.div
-              animate={{ 
-                y: [0, -10, 0],
-                filter: [
-                  "drop-shadow(0 0 15px rgba(212,175,55,0.3))", 
-                  "drop-shadow(0 0 40px rgba(212,175,55,0.6))", 
-                  "drop-shadow(0 0 15px rgba(212,175,55,0.3))"
-                ]
-              }}
-              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-            >
-              <img 
-                src="https://i.postimg.cc/DwTnbrYh/Captura-de-tela-2026-04-22-115752.png" 
-                alt="Deborah Joias" 
-                className="w-64 h-64 md:w-96 md:h-96 object-contain relative z-10"
-              />
-            </motion.div>
-            
-            {/* Holographic Scan Line */}
-            <motion.div 
-              initial={{ top: "-20%" }}
-              animate={{ top: "120%" }}
-              transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-              className="absolute left-0 right-0 h-[2px] bg-brand-gold/40 z-20 shadow-[0_0_15px_rgba(212,175,55,0.8)] blur-[1px]"
-            />
-
-            {/* Futuristic Diamond Shine Overlay */}
-            <div className="absolute inset-0 z-30 overflow-hidden rounded-full pointer-events-none mix-blend-color-dodge">
-              <motion.div 
-                animate={{ 
-                  x: ["-200%", "200%"],
-                  opacity: [0, 1, 0]
-                }}
-                transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 0.5 }}
-                className="w-full h-full bg-gradient-to-r from-transparent via-brand-gold/40 to-transparent absolute top-0 -skew-x-12"
-              />
-            </div>
+          <div className="space-y-1">
+            <h1 className="text-3xl md:text-5xl font-serif text-brand-dark tracking-widest leading-tight">
+              Loja <span className="italic">Exclusiva</span>
+            </h1>
+            <p className="text-[10px] md:text-[12px] uppercase tracking-[0.5em] text-brand-accent font-medium">
+              Escolha seu portal de entrada
+            </p>
           </div>
         </motion.div>
-      </motion.div>
 
-      {/* Cybernetic Status Indicator */}
-      <div className="absolute bottom-24 flex flex-col items-center gap-4">
-        <div className="flex gap-2 items-center">
-            <motion.div 
-              animate={{ opacity: [1, 0.4, 1] }} 
-              transition={{ duration: 0.2, repeat: Infinity }}
-              className="w-1.5 h-1.5 bg-brand-gold rounded-full shadow-[0_0_8px_rgba(212,175,55,1)]" 
-            />
-            <span className="text-[9px] uppercase tracking-[0.4em] text-brand-gold/60 font-mono">Initializing Premium Experience</span>
-        </div>
-        <div className="w-40 h-[1px] bg-brand-gold/20 relative overflow-hidden">
-          <motion.div
-            initial={{ x: "-100%" }}
-            animate={{ x: "100%" }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute inset-0 w-1/2 bg-brand-gold shadow-[0_0_10px_rgba(212,175,55,0.5)]"
-          />
-        </div>
-      </div>
+        {/* Action Buttons */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mb-12">
+          <motion.button
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.5, duration: 0.8 }}
+            onClick={onComplete}
+            className="group relative overflow-hidden bg-white/60 backdrop-blur-md border border-brand-accent/20 p-8 rounded-3xl transition-all hover:bg-white hover:border-brand-accent/50 flex flex-col items-center gap-4 shadow-sm hover:shadow-xl hover:shadow-brand-accent/5"
+          >
+            <div className="p-4 bg-brand-light rounded-2xl group-hover:bg-brand-accent group-hover:text-white transition-all duration-500">
+              <ShoppingBag size={24} strokeWidth={1.5} className="text-brand-accent group-hover:text-white" />
+            </div>
+            <div className="space-y-1">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-brand-dark">Explorar Loja</span>
+              <p className="text-[9px] text-brand-dark/40 uppercase tracking-widest">Catálogo Completo</p>
+            </div>
+          </motion.button>
 
-      {/* Futuristic Progress Bar */}
-      <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-white/5 overflow-hidden">
+          <motion.button
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.7, duration: 0.8 }}
+            onClick={handleWhatsApp}
+            className="group relative overflow-hidden bg-brand-pink/10 backdrop-blur-md border border-brand-pink/20 p-8 rounded-3xl transition-all hover:bg-brand-pink/20 hover:border-brand-pink/50 flex flex-col items-center gap-4 shadow-sm hover:shadow-xl hover:shadow-brand-pink/5"
+          >
+            <div className="p-4 bg-brand-light rounded-2xl group-hover:bg-brand-dark group-hover:text-white transition-all duration-500">
+              <MessageCircle size={24} strokeWidth={1.5} className="text-brand-pink group-hover:text-white" />
+            </div>
+            <div className="space-y-1">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-brand-dark">Atendimento VIP</span>
+              <p className="text-[9px] text-brand-dark/40 uppercase tracking-widest">Suporte via WhatsApp</p>
+            </div>
+          </motion.button>
+        </div>
+
+        {/* Auto-Entry Timer */}
         <motion.div
-          initial={{ width: "0%" }}
-          animate={{ width: "100%" }}
-          transition={{ duration: 4, ease: "circOut" }}
-          className="h-full bg-gradient-to-r from-brand-gold/20 via-brand-gold to-brand-gold/20 shadow-[0_0_20px_rgba(212,175,55,0.5)]"
-        />
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.5 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <div className="flex gap-2 items-center">
+            <span className="text-[9px] uppercase tracking-[0.3em] text-brand-dark/30 font-medium">Entrada automática em</span>
+            <span className="text-brand-accent font-serif text-lg w-6">{timeLeft}s</span>
+          </div>
+          
+          <div className="w-48 h-[2px] bg-brand-dark/5 rounded-full overflow-hidden">
+            <motion.div 
+              initial={{ width: "100%" }}
+              animate={{ width: "0%" }}
+              transition={{ duration: 10, ease: "linear" }}
+              className="h-full bg-brand-accent shadow-[0_0_10px_rgba(212,175,55,0.4)]"
+            />
+          </div>
+        </motion.div>
       </div>
+
+      {/* Decorative Ornaments */}
+      <div className="absolute top-0 left-0 p-12 hidden md:block opacity-30">
+        <div className="w-[1px] h-32 bg-gradient-to-b from-brand-accent to-transparent" />
+      </div>
+      <div className="absolute bottom-0 right-0 p-12 hidden md:block opacity-30">
+        <div className="w-[1px] h-32 bg-gradient-to-t from-brand-accent to-transparent" />
+      </div>
+
     </motion.div>
   );
 }
+

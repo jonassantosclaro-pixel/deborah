@@ -1,8 +1,8 @@
-import { ShoppingBag, Menu, User, Instagram, Facebook } from 'lucide-react';
+import { ShoppingBag, Menu, User, Instagram, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
-import { collection, getDocs, query, limit } from 'firebase/firestore';
+import { collection, onSnapshot, query, limit } from 'firebase/firestore';
 import { Settings } from '../types';
 
 interface NavbarProps {
@@ -14,61 +14,62 @@ export function Navbar({ cartCount, onCartClick }: NavbarProps) {
   const [settings, setSettings] = useState<Settings | null>(null);
 
   useEffect(() => {
-    const fetchSettings = async () => {
-      const s = await getDocs(query(collection(db, 'settings'), limit(1)));
+    const unsub = onSnapshot(query(collection(db, 'settings'), limit(1)), (s) => {
       if (!s.empty) setSettings({ id: s.docs[0].id, ...s.docs[0].data() } as Settings);
-    };
-    fetchSettings();
+    });
+    return () => unsub();
   }, []);
 
   return (
-    <nav className="sticky top-0 z-40 bg-white/70 backdrop-blur-[10px] border-b border-brand-gold/20 px-4 py-3 md:px-8">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button className="md:hidden text-brand-dark">
-            <Menu size={24} />
+    <nav className="sticky top-0 z-40 bg-white border-b border-black/5 px-4 py-4 md:px-12 backdrop-blur-md bg-white/95">
+      <div className="max-w-[1400px] mx-auto flex items-center justify-between relative">
+        
+        {/* Left Side: Menu Toggle + Social */}
+        <div className="flex items-center gap-6 flex-1">
+          <button className="text-brand-dark hover:scale-110 transition-transform">
+            <Menu size={20} strokeWidth={1.5} />
           </button>
-          <Link to="/" className="flex items-center gap-3 group">
-            <img 
-              src={settings?.logoUrl || "https://i.postimg.cc/DwTnbrYh/Captura-de-tela-2026-04-22-115752.png"} 
-              alt="Logo" 
-              className="h-10 md:h-14 w-auto object-contain transition-transform group-hover:scale-105" 
-            />
-          </Link>
-          
-          <div className="hidden xl:flex items-center gap-4 ml-6 pl-6 border-l border-brand-gold/20">
-             <a href={settings?.instagram || "https://instagram.com/deborahsemijoiaspersonalizadas/"} target="_blank" rel="noreferrer" className="text-black hover:text-brand-pink transition-colors">
-               <Instagram size={18} />
+          <div className="hidden lg:flex items-center gap-4">
+             <a href={settings?.instagram || "https://instagram.com/deborahsemijoiaspersonalizadas/"} target="_blank" rel="noreferrer" className="text-brand-dark hover:text-brand-accent transition-colors">
+               <Instagram size={18} strokeWidth={1.5} />
              </a>
-             <a href={settings?.facebook || "#"} target="_blank" rel="noreferrer" className="text-black hover:text-brand-pink transition-colors">
-               <Facebook size={18} />
-             </a>
+             <button className="text-brand-dark hover:text-brand-accent transition-colors">
+               <Search size={18} strokeWidth={1.5} />
+             </button>
           </div>
         </div>
 
-        <div className="hidden md:flex items-center gap-8 font-semibold text-[13px] text-black uppercase tracking-wider">
-          <Link to="/" className="hover:text-brand-pink transition-colors relative after:absolute after:-bottom-1 after:left-0 after:w-full after:h-0.5 after:bg-brand-pink after:scale-x-0 hover:after:scale-x-100 after:transition-transform">Home</Link>
-          <button className="hover:text-brand-pink transition-colors uppercase">Coleções</button>
-          <button className="hover:text-brand-pink transition-colors uppercase">Personalizados</button>
+        {/* Center: Logo */}
+        <div className="absolute left-1/2 -translate-x-1/2 flex justify-center">
+          <Link to="/" className="flex items-center">
+            <img 
+              src={settings?.logoUrl || "https://i.postimg.cc/zXRgnSG6/Captura-de-tela-2026-04-20-205007.png"} 
+              alt="Logo" 
+              className="h-12 md:h-16 w-auto object-contain" 
+            />
+          </Link>
         </div>
 
-        <div className="flex items-center gap-4 text-brand-dark font-bold text-sm">
-          <a href={`https://wa.me/${settings?.whatsapp || "5577999110250"}`} target="_blank" rel="noreferrer" className="hidden lg:flex items-center gap-2 text-green-500 hover:text-green-600 transition-colors uppercase tracking-widest text-[11px]">
-            Fale Conosco <span className="text-lg">✆</span>
-          </a>
-          <Link to="/admin" className="p-2 hover:text-brand-pink transition-colors">
-            <User size={22} />
+        {/* Right Side: Admin + Cart */}
+        <div className="flex items-center gap-4 md:gap-6 flex-1 justify-end">
+          <Link to="/admin" className="hidden sm:flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] font-medium text-brand-dark hover:text-brand-accent transition-colors">
+            <User size={18} strokeWidth={1.5} />
+            <span className="hidden md:inline">Painel</span>
           </Link>
+          
           <button 
             onClick={onCartClick}
-            className="relative p-2 hover:text-brand-pink transition-all hover:scale-110 active:scale-95"
+            className="flex items-center gap-2 group p-1"
           >
-            <ShoppingBag size={24} />
-            {cartCount > 0 && (
-              <span className="absolute top-0 right-0 w-5 h-5 bg-brand-pink text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-in zoom-in duration-300">
-                {cartCount}
-              </span>
-            )}
+            <div className="relative">
+              <ShoppingBag size={20} strokeWidth={1.5} className="group-hover:text-brand-accent transition-colors" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-brand-dark text-white text-[8px] font-bold rounded-full flex items-center justify-center">
+                  {cartCount}
+                </span>
+              )}
+            </div>
+            <span className="hidden sm:inline text-[10px] uppercase tracking-[0.2em] font-medium group-hover:text-brand-accent transition-colors">Sacola</span>
           </button>
         </div>
       </div>
