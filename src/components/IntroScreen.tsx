@@ -100,10 +100,10 @@ export function IntroScreen({ onComplete }: { onComplete: () => void }) {
         >
           <div className="space-y-1">
             <h1 className="text-3xl md:text-5xl font-serif text-brand-dark tracking-widest leading-tight">
-              Loja <span className="italic">Exclusiva</span>
+              Deborah <span className="italic">Joias</span>
             </h1>
             <p className="text-[10px] md:text-[12px] uppercase tracking-[0.5em] text-brand-accent font-medium">
-              Escolha seu portal de entrada
+              Personalizadas
             </p>
           </div>
         </motion.div>

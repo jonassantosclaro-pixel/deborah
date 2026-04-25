@@ -110,7 +110,7 @@ export function Store({ onAddToCart }: StoreProps) {
            transition={{ delay: 0.1 }}
            className="text-4xl md:text-6xl font-serif text-brand-dark"
          >
-           Deborah Joias
+           Deborah Joias Personalizadas
          </motion.h1>
          <motion.p 
            initial={{ opacity: 0, y: 10 }}
@@ -147,42 +147,6 @@ export function Store({ onAddToCart }: StoreProps) {
             </button>
           ))}
         </div>
-        
-        {/* Sub-categories row */}
-        <AnimatePresence mode="wait">
-          {selectedCategory !== 'all' && subCategories.some(s => s.categoryId === selectedCategory) && (
-            <motion.div 
-              key={selectedCategory}
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="flex flex-wrap gap-4 pt-8 justify-center items-center overflow-hidden"
-            >
-               {subCategories.filter(s => s.categoryId === selectedCategory).map(sub => (
-                 <button
-                   key={sub.id}
-                   onClick={() => setSelectedSubCategory(sub.id)}
-                   className={cn(
-                     "text-[9px] uppercase tracking-widest px-4 py-1.5 rounded-full border transition-all",
-                     selectedSubCategory === sub.id ? "bg-brand-dark border-brand-dark text-white" : "border-brand-dark/10 text-brand-muted hover:border-brand-dark"
-                   )}
-                 >
-                   {sub.name}
-                 </button>
-               ))}
-               {/* Option to clear sub-filter */}
-               <button 
-                 onClick={() => setSelectedSubCategory('all')}
-                 className={cn(
-                   "text-[9px] uppercase tracking-widest px-4 py-1.5 rounded-full border transition-all",
-                   selectedSubCategory === 'all' ? "bg-brand-dark border-brand-dark text-white" : "border-brand-dark/10 text-brand-muted hover:border-brand-dark"
-                 )}
-               >
-                 Ver Todos
-               </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
 
       {/* Product Grid Area */}
