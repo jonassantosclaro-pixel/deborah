@@ -123,19 +123,20 @@ export function Store({ onAddToCart }: StoreProps) {
       </div>
 
       {/* Minimalism Filter Bar */}
-      <div className="max-w-[1400px] mx-auto border-y border-brand-dark/5 py-8 mb-16 flex flex-wrap items-center justify-center gap-x-12 gap-y-6">
-        <button 
-          onClick={() => { setSelectedCategory('all'); setSelectedSubCategory('all'); }}
-          className={cn(
-            "text-[11px] uppercase tracking-[0.2em] transition-all relative py-1",
-            selectedCategory === 'all' ? "text-brand-dark font-bold after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-brand-accent" : "text-brand-muted hover:text-brand-dark"
-          )}
-        >
-          Coleção Geral
-        </button>
-        {categories.map(cat => (
-          <div key={cat.id} className="relative group">
+      <div className="max-w-[1400px] mx-auto mb-16">
+        <div className="border-y border-brand-dark/5 py-8 flex flex-wrap items-center justify-center gap-x-12 gap-y-6">
+          <button 
+            onClick={() => { setSelectedCategory('all'); setSelectedSubCategory('all'); }}
+            className={cn(
+              "text-[11px] uppercase tracking-[0.2em] transition-all relative py-1",
+              selectedCategory === 'all' ? "text-brand-dark font-bold after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-brand-accent" : "text-brand-muted hover:text-brand-dark"
+            )}
+          >
+            Coleção Geral
+          </button>
+          {categories.map(cat => (
             <button 
+              key={cat.id}
               onClick={() => { setSelectedCategory(cat.id); setSelectedSubCategory('all'); }}
               className={cn(
                 "text-[11px] uppercase tracking-[0.2em] transition-all relative py-1",
@@ -144,25 +145,44 @@ export function Store({ onAddToCart }: StoreProps) {
             >
               {cat.name}
             </button>
-            
-            {selectedCategory === cat.id && subCategories.some(s => s.categoryId === cat.id) && (
-              <div className="absolute top-full left-1/2 -translate-x-1/2 pt-4 flex gap-4 min-w-[200px] justify-center items-center">
-                 {subCategories.filter(s => s.categoryId === cat.id).map(sub => (
-                   <button
-                     key={sub.id}
-                     onClick={() => setSelectedSubCategory(sub.id)}
-                     className={cn(
-                       "text-[9px] uppercase tracking-widest px-3 py-1 rounded-full border transition-all",
-                       selectedSubCategory === sub.id ? "bg-brand-dark border-brand-dark text-white" : "border-brand-dark/5 text-brand-muted hover:border-brand-dark"
-                     )}
-                   >
-                     {sub.name}
-                   </button>
-                 ))}
-              </div>
-            )}
-          </div>
-        ))}
+          ))}
+        </div>
+        
+        {/* Sub-categories row */}
+        <AnimatePresence mode="wait">
+          {selectedCategory !== 'all' && subCategories.some(s => s.categoryId === selectedCategory) && (
+            <motion.div 
+              key={selectedCategory}
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="flex flex-wrap gap-4 pt-8 justify-center items-center overflow-hidden"
+            >
+               {subCategories.filter(s => s.categoryId === selectedCategory).map(sub => (
+                 <button
+                   key={sub.id}
+                   onClick={() => setSelectedSubCategory(sub.id)}
+                   className={cn(
+                     "text-[9px] uppercase tracking-widest px-4 py-1.5 rounded-full border transition-all",
+                     selectedSubCategory === sub.id ? "bg-brand-dark border-brand-dark text-white" : "border-brand-dark/10 text-brand-muted hover:border-brand-dark"
+                   )}
+                 >
+                   {sub.name}
+                 </button>
+               ))}
+               {/* Option to clear sub-filter */}
+               <button 
+                 onClick={() => setSelectedSubCategory('all')}
+                 className={cn(
+                   "text-[9px] uppercase tracking-widest px-4 py-1.5 rounded-full border transition-all",
+                   selectedSubCategory === 'all' ? "bg-brand-dark border-brand-dark text-white" : "border-brand-dark/10 text-brand-muted hover:border-brand-dark"
+                 )}
+               >
+                 Ver Todos
+               </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Product Grid Area */}

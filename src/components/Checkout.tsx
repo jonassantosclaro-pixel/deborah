@@ -441,7 +441,9 @@ export function Checkout({ cart, clearCart }: CheckoutProps) {
                     const rawPixKey = (submittedDetails?.pixKey || '66366255000180').replace(/\D/g, '');
                     const amount = finalTotal.toFixed(2);
                     const amountLen = amount.length.toString().padStart(2, '0');
-                    const pixPayload = `00020126360014BR.GOV.BCB.PIX0114${rawPixKey}52040000530398654${amountLen}${amount}5802BR5915Deborah Evellyn6008Guanambi62070503***6304`;
+                    const cityName = settings?.city?.substring(0, 15) || "Guanambi";
+                    const cityNameLen = cityName.length.toString().padStart(2, "0");
+                    const pixPayload = `00020126360014BR.GOV.BCB.PIX0114${rawPixKey}52040000530398654${amountLen}${amount}5802BR5915Deborah Evellyn60${cityNameLen}${cityName}62070503***6304`;
                     return <QRCodeSVG value={pixPayload} size={220} />;
                   })()}
                 </div>

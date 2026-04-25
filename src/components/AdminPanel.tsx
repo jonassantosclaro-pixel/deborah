@@ -60,6 +60,8 @@ export function AdminPanel() {
     cnpj: '',
     ownerName: '',
     pixKey: '',
+    city: 'Guanambi',
+    state: 'BA',
     logoUrl: 'https://i.postimg.cc/zXRgnSG6/Captura-de-tela-2026-04-20-205007.png',
     heroImageUrl: '',
     freeShippingThreshold: 0
@@ -578,6 +580,25 @@ export function AdminPanel() {
                     placeholder="email@exemplo.com"
                     value={settingsForm.email}
                     onChange={e => setSettingsForm({ ...settingsForm, email: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-4">
+                  <label className="text-[10px] font-bold text-brand-dark uppercase tracking-widest block ml-1">Cidade</label>
+                  <input 
+                    className="w-full bg-transparent border-b border-black/10 py-3 focus:border-brand-accent transition-colors focus:outline-none text-sm font-medium"
+                    placeholder="Cidade"
+                    value={settingsForm.city}
+                    onChange={e => setSettingsForm({ ...settingsForm, city: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-4">
+                  <label className="text-[10px] font-bold text-brand-dark uppercase tracking-widest block ml-1">Estado (UF)</label>
+                  <input 
+                    className="w-full bg-transparent border-b border-black/10 py-3 focus:border-brand-accent transition-colors focus:outline-none text-sm font-medium"
+                    placeholder="Ex: BA"
+                    maxLength={2}
+                    value={settingsForm.state}
+                    onChange={e => setSettingsForm({ ...settingsForm, state: e.target.value })}
                   />
                 </div>
                 <div className="space-y-4 col-span-2">

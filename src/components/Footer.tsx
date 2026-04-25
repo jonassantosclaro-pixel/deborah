@@ -44,7 +44,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 w-full pt-16 border-t border-black/5">
            <div className="flex flex-col items-center space-y-3">
              <MapPin size={18} strokeWidth={1} className="text-brand-accent" />
-             <p className="text-[10px] uppercase tracking-[0.2em] font-medium">Guanambi, Bahia</p>
+             <p className="text-[10px] uppercase tracking-[0.2em] font-medium">{settings?.city || "Guanambi"}, {settings?.state || "Bahia"}</p>
            </div>
            <div className="flex flex-col items-center space-y-3">
              <Instagram size={18} strokeWidth={1} className="text-brand-accent" />

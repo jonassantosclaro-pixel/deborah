@@ -40,6 +40,8 @@ export interface Settings {
   cnpj: string;
   ownerName: string;
   pixKey: string;
+  city: string;
+  state: string;
   logoUrl?: string;
   heroImageUrl?: string;
   freeShippingThreshold?: number;
